@@ -947,6 +947,17 @@ h3 {
     font-size: 1.2em;
 }
 
+.bet-players {
+    margin-top: 5px;
+    font-size: 0.8em;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    min-height: 20px;
+    max-width: 100%;
+    word-wrap: break-word;
+    line-height: 1.2;
+}
+
 /* Race phase - Card Game Aesthetic */
 .race-track {
     background: #2c3e50;

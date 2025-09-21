@@ -555,25 +555,44 @@ function placeBet(suit) {
         broadcastBettingUpdate();
     }
     
-    console.log(`Player ${playerId} bet on ${suit}`);
+    const playerName = currentPlayer ? currentPlayer.name : 'Speler';
+    console.log(`🎯 ${playerName} bet on ${suit}`);
 }
 
 function updateBetCounts() {
     const betCounts = { '♠': 0, '♥': 0, '♦': 0, '♣': 0 };
+    const betPlayers = { '♠': [], '♥': [], '♦': [], '♣': [] };
     
-    // Count bets
-    Object.values(raceState.playerBets).forEach(suit => {
+    // Count bets and collect player names
+    Object.entries(raceState.playerBets).forEach(([playerId, suit]) => {
         betCounts[suit]++;
+        // Find player name
+        const player = gameState.players.find(p => p.id === playerId);
+        if (player) {
+            betPlayers[suit].push(player.name);
+        }
     });
     
     // Update UI
     Object.keys(betCounts).forEach(suit => {
-        const elementId = `bet-${suit === '♠' ? 'spades' : 
-                               suit === '♥' ? 'hearts' :
-                               suit === '♦' ? 'diamonds' : 'clubs'}`;
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.textContent = betCounts[suit];
+        const suitName = suit === '♠' ? 'spades' : 
+                        suit === '♥' ? 'hearts' :
+                        suit === '♦' ? 'diamonds' : 'clubs';
+        
+        // Update count
+        const countElement = document.getElementById(`bet-${suitName}`);
+        if (countElement) {
+            countElement.textContent = betCounts[suit];
+        }
+        
+        // Update player names
+        const playersElement = document.getElementById(`bet-players-${suitName}`);
+        if (playersElement) {
+            if (betPlayers[suit].length > 0) {
+                playersElement.textContent = betPlayers[suit].join(', ');
+            } else {
+                playersElement.textContent = '';
+            }
         }
     });
 }
@@ -586,6 +605,10 @@ function endBettingPhase() {
         clearInterval(raceState.bettingInterval);
         raceState.bettingInterval = null;
     }
+    
+    // Set timer to 0
+    raceState.bettingTimer = 0;
+    updateBettingTimer();
     
     // Assign random bets to players who didn't bet
     gameState.players.forEach(player => {
@@ -1110,9 +1133,10 @@ function handleBettingUpdateBroadcast(eventData) {
     if (!eventData || eventData.type !== 'betting_update') return;
     
     console.log('📥 Received betting update broadcast');
+    console.log('📥 Timer:', eventData.bettingTimer, 'Bets:', eventData.playerBets);
     
     // Update betting state
-    raceState.playerBets = eventData.playerBets;
+    raceState.playerBets = { ...eventData.playerBets };
     raceState.bettingTimer = eventData.bettingTimer;
     
     // Update UI
