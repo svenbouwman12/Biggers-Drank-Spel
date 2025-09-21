@@ -124,21 +124,33 @@ DROP FUNCTION IF EXISTS cleanup_old_rooms();
 -- Create new simplified cleanup function
 CREATE OR REPLACE FUNCTION cleanup_old_data()
 RETURNS void AS $$
+DECLARE
+    deleted_rooms INTEGER := 0;
+    deleted_players INTEGER := 0;
+    deleted_events INTEGER := 0;
 BEGIN
     -- Delete rooms older than 24 hours with no players
+    -- Use code instead of id for comparison since room_code is VARCHAR
     DELETE FROM rooms 
     WHERE created_at < NOW() - INTERVAL '24 hours'
-    AND id NOT IN (
+    AND code NOT IN (
         SELECT DISTINCT room_code FROM players WHERE room_code IS NOT NULL
     );
+    GET DIAGNOSTICS deleted_rooms = ROW_COUNT;
     
     -- Delete players who haven't been seen for more than 30 minutes
     DELETE FROM players 
     WHERE last_seen < NOW() - INTERVAL '30 minutes';
+    GET DIAGNOSTICS deleted_players = ROW_COUNT;
     
     -- Delete old game events (older than 7 days)
     DELETE FROM game_events 
     WHERE created_at < NOW() - INTERVAL '7 days';
+    GET DIAGNOSTICS deleted_events = ROW_COUNT;
+    
+    -- Log cleanup results
+    RAISE NOTICE 'Cleanup completed: % rooms, % players, % events deleted', 
+                 deleted_rooms, deleted_players, deleted_events;
 END;
 $$ LANGUAGE plpgsql;
 
