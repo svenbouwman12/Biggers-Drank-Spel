@@ -158,23 +158,56 @@ function showLobbyScreen() {
     showLobbyTab('create');
 }
 
-function showLobbyTab(tabName) {
-    // Verberg alle tabs
-    const tabs = document.querySelectorAll('.lobby-tab');
-    tabs.forEach(tab => tab.classList.remove('active'));
-    
-    // Verberg alle tab buttons
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    tabButtons.forEach(btn => btn.classList.remove('active'));
-    
-    // Toon geselecteerde tab
-    document.getElementById(tabName + 'LobbyTab').classList.add('active');
-    event.target.classList.add('active');
-    
-    // Automatisch rooms verversen wanneer je naar "rooms" tab gaat
-    if (tabName === 'rooms') {
-        console.log('🔄 Auto-refreshing rooms...');
-        refreshRooms(true); // Silent refresh
+function showLobbyTab(tabName, clickedButton = null) {
+    try {
+        console.log('🔄 Switching to tab:', tabName);
+        
+        // Verberg alle tabs
+        const tabs = document.querySelectorAll('.lobby-tab');
+        tabs.forEach(tab => {
+            if (tab && tab.classList) {
+                tab.classList.remove('active');
+            }
+        });
+        
+        // Verberg alle tab buttons
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        tabButtons.forEach(btn => {
+            if (btn && btn.classList) {
+                btn.classList.remove('active');
+            }
+        });
+        
+        // Toon geselecteerde tab
+        const targetTab = document.getElementById(tabName + 'LobbyTab');
+        if (targetTab && targetTab.classList) {
+            targetTab.classList.add('active');
+        } else {
+            console.error('❌ Target tab not found:', tabName + 'LobbyTab');
+        }
+        
+        // Activeer de juiste tab button
+        if (clickedButton && clickedButton.classList) {
+            // Als functie wordt aangeroepen vanuit een klik
+            clickedButton.classList.add('active');
+        } else {
+            // Als functie wordt aangeroepen vanuit code
+            const activeTabButton = document.querySelector(`[onclick*="showLobbyTab('${tabName}'"]`);
+            if (activeTabButton && activeTabButton.classList) {
+                activeTabButton.classList.add('active');
+            }
+        }
+        
+        // Automatisch rooms verversen wanneer je naar "rooms" tab gaat
+        if (tabName === 'rooms') {
+            console.log('🔄 Auto-refreshing rooms...');
+            refreshRooms(true); // Silent refresh
+        }
+        
+        console.log('✅ Tab switched successfully:', tabName);
+        
+    } catch (error) {
+        console.error('❌ Error switching tab:', error);
     }
 }
 
