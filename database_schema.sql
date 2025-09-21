@@ -76,6 +76,7 @@ CREATE INDEX IF NOT EXISTS idx_rooms_created_at ON rooms(created_at);
 CREATE INDEX IF NOT EXISTS idx_players_room_code ON players(room_code);
 CREATE INDEX IF NOT EXISTS idx_players_host ON players(is_host);
 CREATE INDEX IF NOT EXISTS idx_players_ready ON players(is_ready);
+CREATE INDEX IF NOT EXISTS idx_players_last_seen ON players(last_seen); -- Voor agressieve cleanup
 
 -- Game actions indexes
 CREATE INDEX IF NOT EXISTS idx_game_actions_room_code ON game_actions(room_code);
