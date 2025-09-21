@@ -349,16 +349,22 @@ async function startGame() {
     
     // Start game in database
     let room = null;
+    let databaseSuccess = false;
     
     if (window.supabaseClient && supabase) {
-        room = await window.supabaseClient.startGame(gameState.roomCode);
-        
-        if (!room) {
-            console.error('❌ Failed to start game in database, trying local mode');
+        try {
+            room = await window.supabaseClient.startGame(gameState.roomCode);
+            
+            if (room) {
+                databaseSuccess = true;
+                console.log('✅ Game started successfully in database:', room);
+            } else {
+                console.error('❌ Failed to start game in database, continuing with local mode');
+                showNotification('Database fout, start lokaal...', 'warning');
+            }
+        } catch (error) {
+            console.error('❌ Database error during game start:', error);
             showNotification('Database fout, start lokaal...', 'warning');
-            // Continue with local game start
-        } else {
-            console.log('✅ Game started successfully in database:', room);
         }
     } else {
         console.log('🔄 Supabase not available, starting local game');
@@ -381,14 +387,21 @@ async function startGame() {
     // Start heartbeat for this player
     window.supabaseClient.startHeartbeat();
     
-    // Broadcast game start action to other players
-    if (window.supabaseClient && supabase) {
-        await window.supabaseClient.broadcastAction('game_start', {
-            gameType: lobbyState.room.gameType,
-            players: lobbyState.players,
-            timestamp: new Date().toISOString()
-        });
-        console.log('✅ Game start action broadcasted to other players');
+    // Broadcast game start action to other players (only if database was successful)
+    if (databaseSuccess && window.supabaseClient && supabase) {
+        try {
+            await window.supabaseClient.broadcastAction('game_start', {
+                gameType: lobbyState.room.gameType,
+                players: lobbyState.players,
+                timestamp: new Date().toISOString()
+            });
+            console.log('✅ Game start action broadcasted to other players');
+        } catch (error) {
+            console.error('❌ Error broadcasting game start action:', error);
+            // Continue anyway, local game will still work
+        }
+    } else {
+        console.log('⚠️ Skipping game start broadcast (database not successful)');
     }
     
     // Start spel
@@ -406,7 +419,11 @@ async function startGame() {
         setupBussenGame();
     }
     
-    showNotification('Spel gestart! 🎮');
+    if (databaseSuccess) {
+        showNotification('Spel gestart! 🎮');
+    } else {
+        showNotification('Spel gestart lokaal! 🎮 (Database offline)', 'warning');
+    }
 }
 
 async function leaveLobby() {

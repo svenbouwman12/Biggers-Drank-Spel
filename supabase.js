@@ -227,26 +227,38 @@ async function startGameInDatabase(roomCode) {
     try {
         console.log('🎮 Starting game for room:', roomCode);
         
-        // First, check if room exists
+        // First, check if room exists and get current status
         const { data: existingRoom, error: checkError } = await supabase
             .from('rooms')
             .select('*')
             .eq('code', roomCode)
-            .eq('status', 'waiting');
+            .single(); // Use single() to get one record
             
         if (checkError) {
             console.error('❌ Error checking room:', checkError);
             throw checkError;
         }
         
-        if (!existingRoom || existingRoom.length === 0) {
-            console.error('❌ Room not found or not in waiting status:', roomCode);
-            throw new Error('Room niet gevonden of niet beschikbaar');
+        if (!existingRoom) {
+            console.error('❌ Room not found:', roomCode);
+            throw new Error('Room niet gevonden');
         }
         
-        console.log('✅ Room found:', existingRoom[0]);
+        console.log('✅ Room found:', existingRoom);
         
-        // Update room status
+        // Check if room is already playing
+        if (existingRoom.status === 'playing') {
+            console.log('⚠️ Room is already playing, returning existing room');
+            return existingRoom;
+        }
+        
+        // Check if room is in waiting status
+        if (existingRoom.status !== 'waiting') {
+            console.error('❌ Room is not in waiting status:', existingRoom.status);
+            throw new Error(`Room is in ${existingRoom.status} status, cannot start game`);
+        }
+        
+        // Update room status with more flexible conditions
         const { data: updatedRoom, error: roomError } = await supabase
             .from('rooms')
             .update({ 
@@ -254,36 +266,56 @@ async function startGameInDatabase(roomCode) {
                 started_at: new Date().toISOString()
             })
             .eq('code', roomCode)
-            .eq('status', 'waiting') // Double check status
-            .select();
+            .select()
+            .single(); // Use single() to get one record
             
         if (roomError) {
             console.error('❌ Error updating room status:', roomError);
-            throw roomError;
+            
+            // Try alternative update without status condition
+            const { data: altUpdatedRoom, error: altError } = await supabase
+                .from('rooms')
+                .update({ 
+                    status: 'playing',
+                    started_at: new Date().toISOString()
+                })
+                .eq('code', roomCode)
+                .select()
+                .single();
+                
+            if (altError) {
+                console.error('❌ Alternative update also failed:', altError);
+                throw altError;
+            }
+            
+            console.log('✅ Room status updated (alternative method):', altUpdatedRoom);
+            return altUpdatedRoom;
         }
         
-        if (!updatedRoom || updatedRoom.length === 0) {
+        if (!updatedRoom) {
             console.error('❌ No room was updated');
             throw new Error('Room kon niet worden bijgewerkt');
         }
         
-        console.log('✅ Room status updated:', updatedRoom[0]);
+        console.log('✅ Room status updated:', updatedRoom);
         
-        // Update all players to ready
+        // Update all players to ready (optional, players are already ready when they join)
         const { data: updatedPlayers, error: playersError } = await supabase
             .from('players')
             .update({ is_ready: true })
             .eq('room_code', roomCode)
+            .eq('status', 'active') // Only update active players
             .select();
             
         if (playersError) {
-            console.error('❌ Error updating players:', playersError);
-            throw playersError;
+            console.error('⚠️ Error updating players (non-critical):', playersError);
+            // Don't throw error for player update, it's not critical
+        } else {
+            console.log('✅ Players updated:', updatedPlayers);
         }
         
-        console.log('✅ Players updated:', updatedPlayers);
-        console.log('✅ Spel gestart in database:', updatedRoom[0]);
-        return updatedRoom[0];
+        console.log('✅ Spel gestart in database:', updatedRoom);
+        return updatedRoom;
         
     } catch (error) {
         console.error('❌ Fout bij starten spel:', error);
