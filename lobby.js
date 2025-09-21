@@ -34,6 +34,13 @@ async function createLobby() {
     gameState.roomCode = roomCode;
     gameState.isMultiplayer = true;
     
+    // Check if Supabase is available
+    if (!window.supabaseClient || !supabase) {
+        console.log('🔄 Supabase niet beschikbaar, gebruik demo modus');
+        createLobbyDemo(roomCode, roomName, selectedGame, maxPlayers, playerName, playerId, createBtn);
+        return;
+    }
+    
     // Create room in database
     const roomData = {
         code: roomCode,
@@ -51,8 +58,8 @@ async function createLobby() {
         }
     } catch (error) {
         console.error('Error creating lobby:', error);
-        showNotification('Fout bij aanmaken lobby. Probeer opnieuw.', 'error');
-        setButtonLoading(createBtn, false);
+        showNotification('Supabase error. Gebruik demo modus.', 'warning');
+        createLobbyDemo(roomCode, roomName, selectedGame, maxPlayers, playerName, playerId, createBtn);
         return;
     }
     
@@ -112,14 +119,18 @@ async function joinLobby() {
     const roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
     
     if (!playerName) {
-        showNotification('Voer een naam in!');
+        showNotification('Voer een naam in!', 'error');
         return;
     }
     
     if (!roomCode) {
-        showNotification('Voer een room code in!');
+        showNotification('Voer een room code in!', 'error');
         return;
     }
+    
+    // Show loading state
+    const joinBtn = document.getElementById('joinLobbyBtn');
+    setButtonLoading(joinBtn, true);
     
     // Set player info
     gameState.playerName = playerName;
@@ -128,35 +139,80 @@ async function joinLobby() {
     gameState.roomCode = roomCode;
     gameState.isMultiplayer = true;
     
-    // Join room in database
-    const playerData = {
-        id: gameState.playerId,
-        name: playerName
-    };
-    
-    const result = await window.supabaseClient.joinRoom(roomCode, playerData);
-    
-    if (!result) {
-        showNotification('Fout bij joinen lobby. Controleer room code.');
+    // Check if Supabase is available
+    if (!window.supabaseClient || !supabase) {
+        console.log('🔄 Supabase niet beschikbaar, gebruik demo modus');
+        joinLobbyDemo(roomCode, playerName, joinBtn);
         return;
     }
     
+    try {
+        // Join room in database
+        const playerData = {
+            id: gameState.playerId,
+            name: playerName
+        };
+        
+        const result = await window.supabaseClient.joinRoom(roomCode, playerData);
+        
+        if (!result) {
+            throw new Error('Room niet gevonden');
+        }
+        
+        // Update lobby state
+        lobbyState.room = {
+            code: result.room.code,
+            name: result.room.name,
+            gameType: result.room.game_type,
+            maxPlayers: result.room.max_players,
+            hostId: result.room.host_id,
+            status: result.room.status
+        };
+        
+        lobbyState.players = [result.player];
+        
+        // Update UI
+        showLobbyStatus();
+        
+        // Hide loading state
+        setButtonLoading(joinBtn, false);
+        
+        showNotification(`Toegetreden tot lobby ${roomCode}!`, 'success');
+        
+    } catch (error) {
+        console.error('Error joining lobby:', error);
+        setButtonLoading(joinBtn, false);
+        showNotification('Supabase error. Gebruik demo modus.', 'warning');
+        joinLobbyDemo(roomCode, playerName, joinBtn);
+    }
+}
+
+function joinLobbyDemo(roomCode, playerName, joinBtn) {
+    // Demo mode - join lobby locally
+    console.log('🎮 Demo mode: Joining lobby lokaal');
+    
     // Update lobby state
     lobbyState.room = {
-        code: result.room.code,
-        name: result.room.name,
-        gameType: result.room.game_type,
-        maxPlayers: result.room.max_players,
-        hostId: result.room.host_id,
-        status: result.room.status
+        code: roomCode,
+        name: 'Demo Lobby',
+        gameType: 'paardenrace',
+        maxPlayers: 4,
+        hostId: 'demo_host',
+        status: 'waiting'
     };
     
-    lobbyState.players = [result.player];
+    lobbyState.players = [
+        { id: 'demo_host', name: 'Demo Host', isHost: true, isReady: true },
+        { id: gameState.playerId, name: playerName, isHost: false, isReady: true }
+    ];
     
     // Update UI
     showLobbyStatus();
     
-    showNotification(`Toegetreden tot lobby ${roomCode}!`);
+    // Hide loading state
+    setButtonLoading(joinBtn, false);
+    
+    showNotification(`Demo: Toegetreden tot lobby ${roomCode}!`, 'warning');
 }
 
 function joinRoomByCode(roomCode) {
@@ -387,6 +443,36 @@ function simulateJoinLobby(roomCode, playerName) {
         showLobbyStatus();
         showNotification(`Toegetreden tot lobby ${roomCode}!`);
     }, 1000);
+}
+
+function createLobbyDemo(roomCode, roomName, selectedGame, maxPlayers, playerName, playerId, createBtn) {
+    // Demo mode - create lobby locally
+    console.log('🎮 Demo mode: Lobby aangemaakt lokaal');
+    
+    // Update lobby state
+    lobbyState.room = {
+        code: roomCode,
+        name: roomName,
+        gameType: selectedGame,
+        maxPlayers: maxPlayers,
+        hostId: playerId,
+        status: 'waiting'
+    };
+    
+    lobbyState.players = [{
+        id: playerId,
+        name: playerName,
+        isHost: true,
+        isReady: true
+    }];
+    
+    // Update UI
+    showLobbyStatus();
+    
+    // Hide loading state
+    setButtonLoading(createBtn, false);
+    
+    showNotification(`Demo lobby "${roomName}" aangemaakt! Code: ${roomCode}`, 'warning');
 }
 
 // ============================================================================
