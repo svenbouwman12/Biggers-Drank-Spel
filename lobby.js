@@ -410,6 +410,11 @@ async function leaveLobby() {
     lobbyState.gameType = null;
     lobbyState.gameStarted = false;
     
+    // Trigger cleanup of empty rooms
+    if (window.supabaseClient && supabase) {
+        window.supabaseClient.cleanupEmptyRooms();
+    }
+    
     // Ga terug naar lobby screen
     showLobbyScreen();
     

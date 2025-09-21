@@ -27,6 +27,9 @@ let socket = null;
 let reconnectAttempts = 0;
 const maxReconnectAttempts = 5;
 
+// Rooms auto-refresh
+let roomsAutoRefreshInterval = null;
+
 // Lobby state
 let lobbyState = {
     room: null,
@@ -209,11 +212,17 @@ function showLobbyTab(tabName, clickedButton = null) {
             }
         }
         
-        // Automatisch rooms verversen wanneer je naar "rooms" tab gaat
-        if (tabName === 'rooms') {
-            console.log('🔄 Auto-refreshing rooms...');
-            refreshRooms(true); // Silent refresh
-        }
+    // Automatisch rooms verversen wanneer je naar "rooms" tab gaat
+    if (tabName === 'rooms') {
+        console.log('🔄 Auto-refreshing rooms...');
+        refreshRooms(true); // Silent refresh
+        
+        // Start auto-refresh interval for rooms tab
+        startRoomsAutoRefresh();
+    } else {
+        // Stop auto-refresh when leaving rooms tab
+        stopRoomsAutoRefresh();
+    }
         
         console.log('✅ Tab switched successfully:', tabName);
         
@@ -1089,6 +1098,34 @@ function updateConnectionStatus() {
         case 'disconnected':
             statusElement.textContent = '🔴 Verbinding verbroken';
             break;
+    }
+}
+
+// ============================================================================
+// ROOMS AUTO-REFRESH FUNCTIONS
+// ============================================================================
+
+function startRoomsAutoRefresh() {
+    // Stop any existing interval
+    stopRoomsAutoRefresh();
+    
+    console.log('🔄 Starting rooms auto-refresh (every 10 seconds)');
+    
+    roomsAutoRefreshInterval = setInterval(() => {
+        // Only refresh if we're currently on the rooms tab
+        const roomsTab = document.getElementById('roomsTab');
+        if (roomsTab && roomsTab.classList.contains('active')) {
+            console.log('🔄 Auto-refreshing rooms...');
+            refreshRooms(true); // Silent refresh
+        }
+    }, 10000); // Every 10 seconds
+}
+
+function stopRoomsAutoRefresh() {
+    if (roomsAutoRefreshInterval) {
+        console.log('⏹️ Stopping rooms auto-refresh');
+        clearInterval(roomsAutoRefreshInterval);
+        roomsAutoRefreshInterval = null;
     }
 }
 

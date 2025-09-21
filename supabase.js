@@ -292,11 +292,19 @@ async function leaveRoomFromDatabase(playerId, roomCode) {
             .eq('room_code', roomCode);
             
         if (!remainingPlayers || remainingPlayers.length === 0) {
+            console.log('🗑️ Room is empty, deleting:', roomCode);
             await supabase
                 .from('rooms')
                 .delete()
                 .eq('code', roomCode);
-            console.log('✅ Lege room verwijderd');
+            console.log('✅ Empty room deleted:', roomCode);
+            
+            // Trigger rooms refresh if someone is viewing the rooms tab
+            if (typeof refreshRooms === 'function') {
+                setTimeout(() => {
+                    refreshRooms(true); // Silent refresh
+                }, 1000);
+            }
         }
         
         console.log('✅ Speler uit room verwijderd');
@@ -619,5 +627,6 @@ window.supabaseClient = {
     broadcastAction: broadcastGameAction,
     setupGameSubscription: setupGameActionSubscription,
     stopPolling: stopPolling,
-    refreshLobbyData: refreshLobbyData
+    refreshLobbyData: refreshLobbyData,
+    cleanupEmptyRooms: cleanupEmptyRooms
 };
