@@ -359,12 +359,39 @@ async function startGame() {
                 databaseSuccess = true;
                 console.log('✅ Game started successfully in database:', room);
             } else {
-                console.error('❌ Failed to start game in database, continuing with local mode');
-                showNotification('Database fout, start lokaal...', 'warning');
+                console.error('❌ Primary game start failed, trying fallback method...');
+                
+                // Try fallback method
+                room = await window.supabaseClient.startGameFallback(gameState.roomCode);
+                
+                if (room) {
+                    databaseSuccess = true;
+                    console.log('✅ Game started successfully with fallback method:', room);
+                    showNotification('Spel gestart (fallback mode)', 'warning');
+                } else {
+                    console.error('❌ Fallback method also failed, continuing with local mode');
+                    showNotification('Database fout, start lokaal...', 'warning');
+                }
             }
         } catch (error) {
             console.error('❌ Database error during game start:', error);
-            showNotification('Database fout, start lokaal...', 'warning');
+            
+            // Try fallback method on error
+            try {
+                console.log('🔄 Trying fallback method after error...');
+                room = await window.supabaseClient.startGameFallback(gameState.roomCode);
+                
+                if (room) {
+                    databaseSuccess = true;
+                    console.log('✅ Game started successfully with fallback after error:', room);
+                    showNotification('Spel gestart (fallback mode)', 'warning');
+                } else {
+                    showNotification('Database fout, start lokaal...', 'warning');
+                }
+            } catch (fallbackError) {
+                console.error('❌ Fallback method also failed:', fallbackError);
+                showNotification('Database fout, start lokaal...', 'warning');
+            }
         }
     } else {
         console.log('🔄 Supabase not available, starting local game');

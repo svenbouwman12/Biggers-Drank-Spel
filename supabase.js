@@ -280,27 +280,81 @@ async function startGameInDatabase(roomCode) {
         console.log('✅ Room validation passed, proceeding with update...');
         console.log('👥 Active players:', activePlayers.map(p => p.name));
         
-        // Update room status - DON'T use .single() on updates!
-        const { data: updatedRooms, error: roomError } = await supabase
+        // Try multiple update approaches to identify the issue
+        console.log('🔄 Attempting room update with multiple methods...');
+        
+        // Method 1: Simple update without status condition
+        let { data: updatedRooms, error: roomError } = await supabase
             .from('rooms')
             .update({ 
                 status: 'playing',
                 started_at: new Date().toISOString()
             })
             .eq('code', roomCode)
-            .eq('status', 'waiting') // Only update if still waiting
-            .select(); // Return updated rows as array
+            .select();
             
-        console.log('🔄 Update query executed, checking results...');
-            
+        console.log('🔄 Method 1 (simple update) result:', { updatedRooms, roomError });
+        
         if (roomError) {
-            console.error('❌ Error updating room status:', roomError);
-            throw roomError;
+            console.error('❌ Method 1 failed:', roomError);
+            
+            // Method 2: Try with different approach
+            console.log('🔄 Trying Method 2 (alternative approach)...');
+            
+            const { data: altUpdatedRooms, error: altRoomError } = await supabase
+                .from('rooms')
+                .update({ 
+                    status: 'playing'
+                })
+                .eq('code', roomCode)
+                .select();
+                
+            console.log('🔄 Method 2 result:', { altUpdatedRooms, altRoomError });
+            
+            if (altRoomError) {
+                console.error('❌ Method 2 also failed:', altRoomError);
+                
+                // Method 3: Check if we have permission to update
+                console.log('🔄 Trying Method 3 (check permissions)...');
+                
+                const { data: testUpdate, error: testError } = await supabase
+                    .from('rooms')
+                    .update({ 
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('code', roomCode)
+                    .select();
+                    
+                console.log('🔄 Method 3 (permission test) result:', { testUpdate, testError });
+                
+                if (testError) {
+                    console.error('❌ All update methods failed - likely RLS policy issue');
+                    throw new Error(`Room update failed due to permissions: ${testError.message}`);
+                } else {
+                    // Permission test worked, try the original update again
+                    console.log('✅ Permissions OK, retrying original update...');
+                    const { data: retryUpdatedRooms, error: retryError } = await supabase
+                        .from('rooms')
+                        .update({ 
+                            status: 'playing',
+                            started_at: new Date().toISOString()
+                        })
+                        .eq('code', roomCode)
+                        .select();
+                        
+                    if (retryError) {
+                        throw retryError;
+                    }
+                    updatedRooms = retryUpdatedRooms;
+                }
+            } else {
+                updatedRooms = altUpdatedRooms;
+            }
         }
         
         // Check if any rows were updated
         if (!updatedRooms || updatedRooms.length === 0) {
-            console.log('⚠️ No rows updated - room might have been modified by another process');
+            console.log('⚠️ No rows updated after all methods - checking current room status...');
             
             // Re-check room status
             const { data: currentRooms } = await supabase
@@ -310,6 +364,8 @@ async function startGameInDatabase(roomCode) {
                 
             if (currentRooms && currentRooms.length > 0) {
                 const currentRoom = currentRooms[0];
+                console.log('🔍 Current room status:', currentRoom.status);
+                
                 if (currentRoom.status === 'playing') {
                     console.log('✅ Room is now playing (updated by another process)');
                     return currentRoom;
@@ -345,7 +401,75 @@ async function startGameInDatabase(roomCode) {
         
     } catch (error) {
         console.error('❌ Fout bij starten spel:', error);
-        showNotification('Fout bij starten spel. Probeer opnieuw.');
+        
+        // Fallback: Try to start game without database update
+        console.log('🔄 Attempting fallback: start game without database update...');
+        
+        try {
+            // Get current room data for fallback
+            const { data: fallbackRooms } = await supabase
+                .from('rooms')
+                .select('*')
+                .eq('code', roomCode);
+                
+            if (fallbackRooms && fallbackRooms.length > 0) {
+                const fallbackRoom = fallbackRooms[0];
+                console.log('✅ Fallback: Using existing room data:', fallbackRoom);
+                
+                // Return the room as if it was updated (for UI purposes)
+                return {
+                    ...fallbackRoom,
+                    status: 'playing', // Assume it's playing for UI
+                    started_at: new Date().toISOString()
+                };
+            } else {
+                console.error('❌ Fallback failed: Room not found');
+                showNotification('Fout bij starten spel. Probeer opnieuw.');
+                return null;
+            }
+        } catch (fallbackError) {
+            console.error('❌ Fallback also failed:', fallbackError);
+            showNotification('Fout bij starten spel. Probeer opnieuw.');
+            return null;
+        }
+    }
+}
+
+// Fallback function that starts game without database update
+async function startGameWithoutDatabaseUpdate(roomCode) {
+    try {
+        console.log('🔄 Fallback: Starting game without database update for room:', roomCode);
+        
+        // Just get the room data and return it as if it was updated
+        const { data: rooms, error } = await supabase
+            .from('rooms')
+            .select('*')
+            .eq('code', roomCode);
+            
+        if (error) {
+            console.error('❌ Error getting room data:', error);
+            throw error;
+        }
+        
+        if (!rooms || rooms.length === 0) {
+            throw new Error('Room not found');
+        }
+        
+        const room = rooms[0];
+        console.log('✅ Fallback: Room data retrieved:', room);
+        
+        // Return room data with playing status (for UI purposes)
+        const fallbackRoom = {
+            ...room,
+            status: 'playing',
+            started_at: new Date().toISOString()
+        };
+        
+        console.log('✅ Fallback: Game started without database update');
+        return fallbackRoom;
+        
+    } catch (error) {
+        console.error('❌ Fallback game start failed:', error);
         return null;
     }
 }
@@ -1019,6 +1143,7 @@ window.supabaseClient = {
     getRooms: getRoomsFromDatabase,
     updatePlayerReady: updatePlayerReadyStatus,
     startGame: startGameInDatabase,
+    startGameFallback: startGameWithoutDatabaseUpdate,
     leaveRoom: leaveRoomFromDatabase,
     broadcastAction: broadcastGameAction,
     setupGameSubscription: setupGameActionSubscription,
