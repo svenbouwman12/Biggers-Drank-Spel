@@ -45,7 +45,7 @@ let raceState = {
     bettingTimer: 30,
     bettingInterval: null,
     cardDrawInterval: null, // Automatisch kaart trekken
-    cardDrawDelay: 3000, // 3 seconden tussen kaarten
+    cardDrawDelay: 2000, // 2 seconden tussen kaarten
     playerBets: {}, // {playerId: suit}
     horses: {
         '♠': 0, // Schoppen
@@ -456,7 +456,7 @@ function resetRaceState() {
     raceState.bettingTimer = 30;
     raceState.bettingInterval = null;
     raceState.cardDrawInterval = null;
-    raceState.cardDrawDelay = 3000;
+    raceState.cardDrawDelay = 2000;
     raceState.playerBets = {};
     raceState.horses = {
         '♠': 0, '♥': 0, '♦': 0, '♣': 0
@@ -797,6 +797,9 @@ function moveHorse(suit, direction) {
             horseElement.classList.add('backwards');
         }
         
+        // Update visual position based on horse position
+        updateHorsePosition(horseElement, raceState.horses[suit]);
+        
         // Remove animation class after animation completes
         setTimeout(() => {
             horseElement.classList.remove('moving', 'backwards');
@@ -804,6 +807,25 @@ function moveHorse(suit, direction) {
     }
     
     console.log(`Horse ${suit} moved ${direction} to position ${raceState.horses[suit]}`);
+}
+
+function updateHorsePosition(horseElement, position) {
+    if (!horseElement) return;
+    
+    // Calculate horizontal offset based on position
+    const trackWidth = 600; // Approximate track width
+    const maxPosition = raceState.trackLength;
+    const offset = (position / maxPosition) * trackWidth;
+    
+    // Apply transform to move horse horizontally
+    horseElement.style.transform = `translateX(${offset}px)`;
+    
+    // Add visual feedback for position
+    if (position >= maxPosition) {
+        horseElement.style.boxShadow = '0 0 20px #f39c12, 0 0 40px #f39c12';
+    } else {
+        horseElement.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+    }
 }
 
 function checkTrackCardReveal() {
@@ -961,22 +983,23 @@ function broadcastRaceCard(card) {
     if (!window.simpleSupabase || !raceState.isHost) return;
     
     const eventData = {
-        type: 'race_card',
-        card: card,
-        horses: raceState.horses,
-        revealedCards: raceState.revealedCards,
-        gameOver: raceState.gameOver,
-        winner: raceState.winner,
-        timestamp: Date.now()
+        room_code: currentRoom ? currentRoom.code : 'unknown',
+        event_type: 'race_card',
+        event_data: {
+            type: 'race_card',
+            card: card,
+            horses: raceState.horses,
+            revealedCards: raceState.revealedCards,
+            gameOver: raceState.gameOver,
+            winner: raceState.winner,
+            timestamp: Date.now()
+        },
+        timestamp: new Date().toISOString()
     };
     
     console.log('📡 Broadcasting race card:', card);
     
-    window.simpleSupabase.addGameEvent(
-        currentRoom ? currentRoom.code : 'unknown',
-        'race_card',
-        eventData
-    );
+    window.simpleSupabase.addGameEvent(eventData);
 }
 
 function handleRaceCardBroadcast(eventData) {
@@ -1039,19 +1062,20 @@ function broadcastBettingUpdate() {
     if (!window.simpleSupabase || !raceState.isHost) return;
     
     const eventData = {
-        type: 'betting_update',
-        playerBets: raceState.playerBets,
-        bettingTimer: raceState.bettingTimer,
-        timestamp: Date.now()
+        room_code: currentRoom ? currentRoom.code : 'unknown',
+        event_type: 'betting_update',
+        event_data: {
+            type: 'betting_update',
+            playerBets: raceState.playerBets,
+            bettingTimer: raceState.bettingTimer,
+            timestamp: Date.now()
+        },
+        timestamp: new Date().toISOString()
     };
     
     console.log('📡 Broadcasting betting update');
     
-    window.simpleSupabase.addGameEvent(
-        currentRoom ? currentRoom.code : 'unknown',
-        'betting_update',
-        eventData
-    );
+    window.simpleSupabase.addGameEvent(eventData);
 }
 
 function handleBettingUpdateBroadcast(eventData) {
@@ -1072,20 +1096,21 @@ function broadcastRaceStart() {
     if (!window.simpleSupabase || !raceState.isHost) return;
     
     const eventData = {
-        type: 'race_start',
-        trackCards: raceState.trackCards,
-        raceSeed: raceState.raceSeed,
-        playerBets: raceState.playerBets,
-        timestamp: Date.now()
+        room_code: currentRoom ? currentRoom.code : 'unknown',
+        event_type: 'race_start',
+        event_data: {
+            type: 'race_start',
+            trackCards: raceState.trackCards,
+            raceSeed: raceState.raceSeed,
+            playerBets: raceState.playerBets,
+            timestamp: Date.now()
+        },
+        timestamp: new Date().toISOString()
     };
     
     console.log('📡 Broadcasting race start');
     
-    window.simpleSupabase.addGameEvent(
-        currentRoom ? currentRoom.code : 'unknown',
-        'race_start',
-        eventData
-    );
+    window.simpleSupabase.addGameEvent(eventData);
 }
 
 function handleRaceStartBroadcast(eventData) {
