@@ -434,9 +434,15 @@ async function refreshRooms(silent = false) {
         const roomsList = document.getElementById('roomsList');
         
         if (rooms.length === 0) {
-            roomsList.innerHTML = '<p>Geen beschikbare rooms gevonden.</p>';
+            roomsList.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    <h3>🎮 Geen actieve lobbies</h3>
+                    <p>Er zijn momenteel geen lobbies met spelers beschikbaar.</p>
+                    <p>💡 <strong>Tip:</strong> Maak je eigen lobby aan!</p>
+                </div>
+            `;
             if (!silent) {
-                showNotification('Geen actieve lobbies gevonden');
+                showNotification('Geen actieve lobbies met spelers gevonden');
             }
             return;
         }

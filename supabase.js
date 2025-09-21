@@ -148,8 +148,9 @@ async function joinRoomInDatabase(roomCode, playerData) {
 
 async function getRoomsFromDatabase() {
     try {
-        console.log('🔄 Fetching available rooms...');
+        console.log('🔄 Fetching available rooms with players...');
         
+        // First get all waiting rooms with their players
         const { data: rooms, error } = await supabase
             .from('rooms')
             .select(`
@@ -161,8 +162,23 @@ async function getRoomsFromDatabase() {
             
         if (error) throw error;
         
-        console.log(`✅ ${rooms ? rooms.length : 0} rooms fetched:`, rooms);
-        return rooms || [];
+        // Filter out rooms with no players or empty player arrays
+        const roomsWithPlayers = (rooms || []).filter(room => {
+            const hasPlayers = room.players && room.players.length > 0;
+            if (!hasPlayers) {
+                console.log(`🗑️ Filtering out empty room: ${room.name} (${room.code})`);
+            }
+            return hasPlayers;
+        });
+        
+        console.log(`✅ ${roomsWithPlayers.length} rooms with players fetched (${(rooms || []).length} total rooms)`);
+        
+        // Optional: Clean up empty rooms (run in background, don't wait for it)
+        if ((rooms || []).length > roomsWithPlayers.length) {
+            cleanupEmptyRooms();
+        }
+        
+        return roomsWithPlayers;
         
     } catch (error) {
         console.error('❌ Fout bij ophalen rooms:', error);
@@ -539,6 +555,55 @@ function updateConnectionIndicator(message, isPolling) {
         } else {
             indicator.classList.remove('polling');
         }
+    }
+}
+
+async function cleanupEmptyRooms() {
+    try {
+        console.log('🧹 Cleaning up empty rooms...');
+        
+        // Get all waiting rooms
+        const { data: allRooms, error: roomsError } = await supabase
+            .from('rooms')
+            .select('code')
+            .eq('status', 'waiting');
+            
+        if (roomsError) throw roomsError;
+        
+        if (!allRooms || allRooms.length === 0) return;
+        
+        // Check which rooms have players
+        const roomsWithPlayers = [];
+        for (const room of allRooms) {
+            const { data: players } = await supabase
+                .from('players')
+                .select('id')
+                .eq('room_code', room.code)
+                .limit(1);
+                
+            if (players && players.length > 0) {
+                roomsWithPlayers.push(room.code);
+            }
+        }
+        
+        // Delete rooms without players
+        const emptyRooms = allRooms.filter(room => !roomsWithPlayers.includes(room.code));
+        
+        if (emptyRooms.length > 0) {
+            console.log(`🗑️ Deleting ${emptyRooms.length} empty rooms:`, emptyRooms.map(r => r.code));
+            
+            for (const room of emptyRooms) {
+                await supabase
+                    .from('rooms')
+                    .delete()
+                    .eq('code', room.code);
+            }
+            
+            console.log('✅ Empty rooms cleaned up');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error cleaning up empty rooms:', error);
     }
 }
 
