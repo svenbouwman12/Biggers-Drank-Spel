@@ -74,6 +74,9 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSettings();
     loadScores();
     
+    // Reset multiplayer state (in case of page refresh)
+    resetMultiplayerState();
+    
     // Initialiseer spelers
     initializePlayers();
     
@@ -90,6 +93,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('✅ App geïnitialiseerd');
 });
+
+function resetMultiplayerState() {
+    // Reset multiplayer state in case of page refresh
+    gameState.isMultiplayer = false;
+    gameState.isHost = false;
+    gameState.roomCode = null;
+    gameState.playerId = null;
+    gameState.playerName = null;
+    gameState.connectionStatus = 'disconnected';
+    
+    // Reset lobby state
+    lobbyState.room = null;
+    lobbyState.players = [];
+    lobbyState.gameType = null;
+    lobbyState.gameStarted = false;
+    lobbyState.currentTurn = 0;
+    
+    // Hide lobby status
+    const lobbyStatus = document.getElementById('lobbyStatus');
+    if (lobbyStatus) {
+        lobbyStatus.style.display = 'none';
+    }
+    
+    console.log('🔄 Multiplayer state reset (page refresh detected)');
+}
 
 function initializeSupabaseConnection() {
     // Check if Supabase is available
