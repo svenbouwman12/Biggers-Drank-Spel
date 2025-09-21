@@ -951,19 +951,21 @@ h3 {
 .race-track {
     background: #2c3e50;
     border-radius: 15px;
-    padding: 40px 20px;
+    padding: 20px;
     margin: 20px 0;
     position: relative;
-    min-height: 400px;
+    min-height: 350px;
     border: 2px solid #34495e;
     box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .track-start {
     position: absolute;
     left: 20px;
-    top: 50%;
-    transform: translateY(-50%);
+    bottom: 40px;
     display: flex;
     flex-direction: column;
     gap: 15px;
@@ -1036,11 +1038,13 @@ h3 {
 
 .track-cards {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
+    align-items: center;
     gap: 8px;
     margin: 20px 0;
-    padding: 0 80px;
+    padding: 20px 0 0 100px; /* Space for aces on the left */
     flex-wrap: wrap;
+    position: relative;
 }
 
 .track-card {
@@ -1092,6 +1096,10 @@ h3 {
     color: #f39c12;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     animation: finishPulse 2s infinite;
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    z-index: 5;
 }
 
 @keyframes finishPulse {
@@ -1197,19 +1205,31 @@ h3 {
     }
     
     .race-track {
-        padding: 20px 10px;
-        min-height: 350px;
+        padding: 15px 10px;
+        min-height: 300px;
     }
     
     .track-start {
         left: 10px;
-        gap: 10px;
+        bottom: 30px;
+        gap: 8px;
     }
     
     .horse-ace {
-        width: 50px;
-        height: 75px;
-        font-size: 1.5em;
+        width: 45px;
+        height: 70px;
+        font-size: 1.4em;
+    }
+    
+    .track-cards {
+        padding: 15px 0 0 80px;
+        gap: 6px;
+    }
+    
+    .track-finish {
+        right: 15px;
+        top: 15px;
+        font-size: 2em;
     }
     
     .track-cards {

@@ -776,18 +776,21 @@ function drawRaceCard() {
 }
 
 function moveHorse(suit, direction) {
+    console.log(`🐎 Moving horse ${suit} ${direction} from position ${raceState.horses[suit]}`);
+    
     if (direction === 'forward') {
         raceState.horses[suit]++;
     } else if (direction === 'backward') {
         raceState.horses[suit] = Math.max(0, raceState.horses[suit] - 1);
     }
     
-    // Animate horse
+    // Get horse element
     const horseElement = document.getElementById(`horse-${suit === '♠' ? 'spades' : 
                                                        suit === '♥' ? 'hearts' :
                                                        suit === '♦' ? 'diamonds' : 'clubs'}`);
     
     if (horseElement) {
+        // Remove any existing animation classes
         horseElement.classList.remove('moving', 'backwards');
         
         // Add appropriate animation class
@@ -797,34 +800,48 @@ function moveHorse(suit, direction) {
             horseElement.classList.add('backwards');
         }
         
-        // Update visual position based on horse position
+        // Update visual position immediately (no delay)
         updateHorsePosition(horseElement, raceState.horses[suit]);
         
         // Remove animation class after animation completes
         setTimeout(() => {
             horseElement.classList.remove('moving', 'backwards');
-        }, 800);
+        }, 600);
     }
     
-    console.log(`Horse ${suit} moved ${direction} to position ${raceState.horses[suit]}`);
+    console.log(`🐎 Horse ${suit} now at position ${raceState.horses[suit]}`);
 }
 
 function updateHorsePosition(horseElement, position) {
     if (!horseElement) return;
     
-    // Calculate horizontal offset based on position
-    const trackWidth = 600; // Approximate track width
-    const maxPosition = raceState.trackLength;
-    const offset = (position / maxPosition) * trackWidth;
+    console.log(`📍 Updating horse position to ${position}`);
     
-    // Apply transform to move horse horizontally
-    horseElement.style.transform = `translateX(${offset}px)`;
+    // Calculate horizontal offset based on position
+    const trackWidth = 450; // Track width in pixels (reduced for better fit)
+    const maxPosition = raceState.trackLength;
+    const offset = Math.min((position / maxPosition) * trackWidth, trackWidth);
+    
+    // Get current position to prevent jumping
+    const currentTransform = horseElement.style.transform || '';
+    const currentOffset = parseFloat(currentTransform.match(/translateX\(([^)]+)\)/)?.[1] || '0');
+    
+    console.log(`📍 Current offset: ${currentOffset}, New offset: ${offset}`);
+    
+    // Only apply transition if position actually changed
+    if (Math.abs(currentOffset - offset) > 1) {
+        horseElement.style.transition = 'transform 0.4s ease-out';
+        horseElement.style.transform = `translateX(${offset}px)`;
+    }
     
     // Add visual feedback for position
     if (position >= maxPosition) {
         horseElement.style.boxShadow = '0 0 20px #f39c12, 0 0 40px #f39c12';
+        horseElement.style.zIndex = '10';
+        console.log(`🏆 Horse reached finish line!`);
     } else {
         horseElement.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+        horseElement.style.zIndex = '1';
     }
 }
 
@@ -1006,16 +1023,29 @@ function handleRaceCardBroadcast(eventData) {
     if (!eventData || eventData.type !== 'race_card') return;
     
     console.log('📥 Received race card broadcast:', eventData.card);
+    console.log('📥 Current horses:', raceState.horses);
+    console.log('📥 Broadcast horses:', eventData.horses);
     
-    // Update race state from broadcast
+    // Update race state from broadcast - exact sync
     raceState.currentCard = eventData.card;
-    raceState.horses = eventData.horses;
+    raceState.horses = { ...eventData.horses }; // Deep copy to ensure sync
     raceState.revealedCards = eventData.revealedCards;
     raceState.gameOver = eventData.gameOver;
     raceState.winner = eventData.winner;
+    raceState.drawnCards++;
     
     // Update UI
     updateRaceUIFromBroadcast();
+    
+    // Force update horse positions to match broadcast
+    Object.keys(raceState.horses).forEach(suit => {
+        const horseElement = document.getElementById(`horse-${suit === '♠' ? 'spades' : 
+                                                       suit === '♥' ? 'hearts' :
+                                                       suit === '♦' ? 'diamonds' : 'clubs'}`);
+        if (horseElement) {
+            updateHorsePosition(horseElement, raceState.horses[suit]);
+        }
+    });
 }
 
 function updateRaceUIFromBroadcast() {
