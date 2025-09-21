@@ -121,29 +121,7 @@ function resetMultiplayerState() {
     console.log('🔄 Multiplayer state reset (page refresh detected)');
 }
 
-function initializeSupabaseConnection() {
-    // Check if Supabase is available
-    if (typeof window.supabase === 'undefined') {
-        console.log('⚠️ Supabase library niet beschikbaar, demo modus');
-        initializeWebSocket();
-        return;
-    }
-    
-    // Initialiseer Supabase verbinding
-    if (window.supabaseClient) {
-        try {
-            window.supabaseClient.initialize();
-            console.log('✅ Supabase verbinding geïnitialiseerd');
-        } catch (error) {
-            console.log('🔄 Supabase initialisatie gefaald, fallback naar demo modus');
-            initializeWebSocket();
-        }
-    } else {
-        // Fallback naar demo modus
-        console.log('🔄 Supabase client niet beschikbaar, demo modus');
-        initializeWebSocket();
-    }
-}
+// Oude Supabase functie verwijderd - we gebruiken nu simpleSupabase
 
 // ============================================================================
 // SCREEN NAVIGATIE
@@ -245,7 +223,9 @@ function showLobbyTab(tabName, clickedButton = null) {
     // Automatisch rooms verversen wanneer je naar "rooms" tab gaat
     if (tabName === 'rooms') {
         console.log('🔄 Auto-refreshing rooms...');
-        refreshRooms(true); // Silent refresh
+        if (window.simpleLobby && window.simpleLobby.refreshRooms) {
+            window.simpleLobby.refreshRooms(); // Use new simple lobby function
+        }
         
         // Start auto-refresh interval for rooms tab
         startRoomsAutoRefresh();
@@ -1091,45 +1071,10 @@ style.textContent = `
 document.head.appendChild(style);
 
 // ============================================================================
-// WEBSOCKET EN MULTIPLAYER FUNCTIONALITEIT
+// MULTIPLAYER FUNCTIONALITEIT (Simple Supabase)
 // ============================================================================
 
-function initializeWebSocket() {
-    // Voor demo doeleinden simuleren we een WebSocket verbinding
-    console.log('🔌 Initialiseren WebSocket verbinding...');
-    
-    // Simuleer verbinding
-    setTimeout(() => {
-        gameState.connectionStatus = 'connected';
-        updateConnectionStatus();
-        console.log('✅ WebSocket verbonden (demo modus)');
-    }, 1000);
-}
-
-function updateConnectionStatus() {
-    let statusElement = document.getElementById('connectionStatus');
-    if (!statusElement) {
-        statusElement = document.createElement('div');
-        statusElement.id = 'connectionStatus';
-        statusElement.className = 'connection-status';
-        document.body.appendChild(statusElement);
-    }
-    
-    const status = gameState.connectionStatus;
-    statusElement.className = `connection-status ${status}`;
-    
-    switch(status) {
-        case 'connected':
-            statusElement.textContent = '🟢 Verbonden';
-            break;
-        case 'connecting':
-            statusElement.textContent = '🟡 Verbinden...';
-            break;
-        case 'disconnected':
-            statusElement.textContent = '🔴 Verbinding verbroken';
-            break;
-    }
-}
+// Oude WebSocket functies verwijderd - we gebruiken nu simpleSupabase
 
 // ============================================================================
 // ROOMS AUTO-REFRESH FUNCTIONS
@@ -1146,7 +1091,9 @@ function startRoomsAutoRefresh() {
         const roomsTab = document.getElementById('roomsTab');
         if (roomsTab && roomsTab.classList.contains('active')) {
             console.log('🔄 Auto-refreshing rooms...');
-            refreshRooms(true); // Silent refresh
+            if (window.simpleLobby && window.simpleLobby.refreshRooms) {
+                window.simpleLobby.refreshRooms(); // Use new simple lobby function
+            }
         }
     }, 10000); // Every 10 seconds
 }
