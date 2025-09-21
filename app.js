@@ -659,11 +659,31 @@ function createTrackCards() {
             // Create UI element
             const cardElement = document.createElement('div');
             cardElement.className = 'track-card';
-            cardElement.textContent = '?';
             cardElement.id = `track-card-${i}`;
             trackContainer.appendChild(cardElement);
         }
     }
+    
+    // Setup ace cards with proper styling
+    setupAceCards();
+}
+
+function setupAceCards() {
+    const aces = [
+        { id: 'horse-diamonds', suit: '♦', color: 'red' },
+        { id: 'horse-clubs', suit: '♣', color: 'black' },
+        { id: 'horse-hearts', suit: '♥', color: 'red' },
+        { id: 'horse-spades', suit: '♠', color: 'black' }
+    ];
+    
+    aces.forEach(ace => {
+        const element = document.getElementById(ace.id);
+        if (element) {
+            element.textContent = ace.suit;
+            element.className = `horse-ace ${ace.color}`;
+            element.setAttribute('data-rank', 'A');
+        }
+    });
 }
 
 function createDrawPile() {
@@ -971,6 +991,13 @@ function updateTrackCardsFromBroadcast() {
         if (trackCardElement && !trackCardElement.classList.contains('revealed')) {
             trackCardElement.textContent = trackCard.rank + trackCard.suit;
             trackCardElement.classList.add('revealed');
+            
+            // Add color class based on suit
+            if (trackCard.suit === '♥' || trackCard.suit === '♦') {
+                trackCardElement.classList.add('red');
+            } else {
+                trackCardElement.classList.add('black');
+            }
         }
     }
 }
@@ -1053,11 +1080,13 @@ function createTrackCardsFromBroadcast() {
         raceState.trackCards.forEach((card, i) => {
             const cardElement = document.createElement('div');
             cardElement.className = 'track-card';
-            cardElement.textContent = '?';
             cardElement.id = `track-card-${i}`;
             trackContainer.appendChild(cardElement);
         });
     }
+    
+    // Setup ace cards with proper styling
+    setupAceCards();
 }
 
 // ============================================================================
