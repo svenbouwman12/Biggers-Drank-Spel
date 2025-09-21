@@ -128,7 +128,7 @@ async function joinRoomInDatabase(roomCode, playerData) {
                 name: playerData.name,
                 room_code: roomCode,
                 is_host: false,
-                is_ready: false,
+                is_ready: true, // Players are automatically ready when they join
                 joined_at: new Date().toISOString()
             }])
             .select()
@@ -272,8 +272,6 @@ function startPolling() {
     gameState.pollingInterval = setInterval(async () => {
         if (gameState.isMultiplayer && gameState.roomCode) {
             try {
-                console.log('🔄 Polling for updates...');
-                updateConnectionIndicator('🔄 Polling...', true);
                 await refreshLobbyData();
                 updateConnectionIndicator('✅ Verbonden', false);
             } catch (error) {
@@ -351,7 +349,7 @@ async function refreshLobbyData() {
             id: p.id,
             name: p.name,
             isHost: p.is_host,
-            isReady: p.is_ready
+            isReady: true // Players are automatically ready when they join
         }));
         
         console.log('🔄 Lobby data refreshed:', {

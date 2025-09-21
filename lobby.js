@@ -239,7 +239,7 @@ async function refreshLobbyData() {
     if (window.supabaseClient && supabase) {
         try {
             await window.supabaseClient.refreshLobbyData();
-            showNotification('Lobby data ververst!', 'success');
+            // Silent refresh - no notification
         } catch (error) {
             console.error('Manual refresh error:', error);
             showNotification('Fout bij verversen lobby', 'error');
@@ -300,14 +300,15 @@ function updatePlayersList() {
 
 function updateStartButton() {
     const startBtn = document.getElementById('startGameBtn');
-    const canStart = gameState.isHost && lobbyState.players.length >= 2 && 
-                     lobbyState.players.every(p => p.isReady);
+    
+    // For multiplayer, only check if host and minimum players
+    // Players are automatically ready when they join
+    const canStart = gameState.isHost && lobbyState.players.length >= 2;
     
     // Debug info
     console.log('🔍 Start button debug:', {
         isHost: gameState.isHost,
         playerCount: lobbyState.players.length,
-        allReady: lobbyState.players.every(p => p.isReady),
         players: lobbyState.players.map(p => ({ name: p.name, isReady: p.isReady })),
         canStart: canStart
     });
@@ -318,9 +319,6 @@ function updateStartButton() {
         startBtn.textContent = '⏳ Alleen host kan starten';
     } else if (lobbyState.players.length < 2) {
         startBtn.textContent = `⏳ Minimaal 2 spelers nodig (${lobbyState.players.length}/2)`;
-    } else if (!lobbyState.players.every(p => p.isReady)) {
-        const notReady = lobbyState.players.filter(p => !p.isReady);
-        startBtn.textContent = `⏳ Wachten op: ${notReady.map(p => p.name).join(', ')}`;
     } else {
         startBtn.textContent = '🎮 Start spel';
     }
