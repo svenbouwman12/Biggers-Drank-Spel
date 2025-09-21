@@ -17,8 +17,8 @@ async function createLobby() {
     try {
         console.log('🏠 Creating lobby...');
         
-        const lobbyName = document.getElementById('lobbyName').value || 'Mijn Lobby';
-        const gameType = document.getElementById('gameType').value || 'paardenrace';
+        const lobbyName = document.getElementById('roomName').value || 'Mijn Lobby';
+        const gameType = document.getElementById('selectedGame').value || 'paardenrace';
         const maxPlayers = parseInt(document.getElementById('maxPlayers').value) || 4;
         const playerName = document.getElementById('playerName').value || 'Speler 1';
         
@@ -372,6 +372,108 @@ function stopHeartbeat() {
 }
 
 // ============================================================================
+// LOBBY SCREEN MANAGEMENT
+// ============================================================================
+
+function showLobbyScreen() {
+    document.getElementById('startScreen').style.display = 'none';
+    document.getElementById('gameScreen').style.display = 'none';
+    document.getElementById('lobbyScreen').style.display = 'block';
+    
+    // Show lobby status if in a room
+    if (currentRoom) {
+        showLobbyStatus();
+    } else {
+        showLobbyTabs();
+    }
+}
+
+function showLobbyTabs() {
+    document.getElementById('lobbyStatus').style.display = 'none';
+    document.getElementById('lobbyTabs').style.display = 'block';
+}
+
+function showLobbyStatus() {
+    document.getElementById('lobbyTabs').style.display = 'none';
+    document.getElementById('lobbyStatus').style.display = 'block';
+    updateLobbyUI();
+}
+
+function showLobbyTab(tabName, clickedButton = null) {
+    try {
+        console.log('🔄 Switching to tab:', tabName);
+
+        // Hide all tabs
+        const tabs = document.querySelectorAll('.lobby-tab');
+        tabs.forEach(tab => {
+            if (tab && tab.classList) {
+                tab.classList.remove('active');
+            }
+        });
+
+        // Hide all tab buttons
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        tabButtons.forEach(btn => {
+            if (btn && btn.classList) {
+                btn.classList.remove('active');
+            }
+        });
+
+        // Show selected tab
+        let targetTabId;
+        if (tabName === 'create') {
+            targetTabId = 'createLobbyTab';
+        } else if (tabName === 'join') {
+            targetTabId = 'joinLobbyTab';
+        } else if (tabName === 'rooms') {
+            targetTabId = 'roomsTab';
+        }
+
+        const targetTab = document.getElementById(targetTabId);
+        if (targetTab && targetTab.classList) {
+            targetTab.classList.add('active');
+        } else {
+            console.error('❌ Target tab not found:', targetTabId);
+        }
+
+        // Activate the correct tab button
+        if (clickedButton && clickedButton.classList) {
+            clickedButton.classList.add('active');
+        } else {
+            const activeTabButton = document.querySelector(`[onclick*="showLobbyTab('${tabName}'"]`);
+            if (activeTabButton && activeTabButton.classList) {
+                activeTabButton.classList.add('active');
+            }
+        }
+
+        // Auto-refresh rooms when switching to rooms tab
+        if (tabName === 'rooms') {
+            refreshRooms();
+        }
+
+        console.log('✅ Tab switched successfully:', tabName);
+
+    } catch (error) {
+        console.error('❌ Error switching tab:', error);
+    }
+}
+
+function showStartScreen() {
+    document.getElementById('lobbyScreen').style.display = 'none';
+    document.getElementById('gameScreen').style.display = 'none';
+    document.getElementById('startScreen').style.display = 'block';
+    
+    // Stop any active polling/heartbeat
+    stopPolling();
+    stopHeartbeat();
+    
+    // Reset state
+    currentRoom = null;
+    currentPlayer = null;
+    players = [];
+}
+
+// ============================================================================
 // UI UPDATES
 // ============================================================================
 
@@ -381,6 +483,8 @@ function updateLobbyUI() {
     // Update room info
     document.getElementById('currentRoomName').textContent = currentRoom.name;
     document.getElementById('currentRoomCode').textContent = currentRoom.code;
+    document.getElementById('currentGameType').textContent = getGameIcon(currentRoom.game_type) + ' ' + currentRoom.game_type;
+    document.getElementById('playerCount').textContent = players.length;
     
     // Update players list
     updatePlayersList();

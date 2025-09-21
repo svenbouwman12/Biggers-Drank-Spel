@@ -156,6 +156,11 @@
                     </div>
                 </div>
 
+                <!-- Lobby tabs container -->
+                <div id="lobbyTabs">
+                    <!-- Tabs content is already above -->
+                </div>
+
                 <!-- Lobby status -->
                 <div id="lobbyStatus" class="lobby-status" style="display: none;">
                     <h3>🏠 In lobby: <span id="currentRoomName"></span></h3>
@@ -163,12 +168,18 @@
                     <p>Spel: <span id="currentGameType"></span></p>
                     <p id="connectionStatus" class="connection-indicator">🔄 Verbonden met server</p>
                     
-                    <div id="playersInLobby" class="players-list"></div>
+                    <div class="players-section">
+                        <h4>👥 Spelers (<span id="playerCount">0</span>)</h4>
+                        <div id="playersList" class="players-list">
+                            <!-- Players will be populated here -->
+                        </div>
+                    </div>
                     
                     <div class="lobby-actions">
-                        <button class="btn btn-primary" onclick="startGame()" id="startGameBtn" disabled>🎮 Start spel</button>
+                        <button class="btn btn-primary" id="startGameBtn" onclick="startGame()" disabled>
+                            🎮 Start spel
+                        </button>
                         <button class="btn btn-secondary" onclick="leaveLobby()">🚪 Verlaat lobby</button>
-                        <button class="btn btn-small" onclick="refreshLobbyData()">🔄 Ververs</button>
                     </div>
                 </div>
             </div>
