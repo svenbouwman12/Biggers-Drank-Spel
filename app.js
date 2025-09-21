@@ -179,11 +179,20 @@ function showLobbyTab(tabName, clickedButton = null) {
         });
         
         // Toon geselecteerde tab
-        const targetTab = document.getElementById(tabName + 'LobbyTab');
+        let targetTabId;
+        if (tabName === 'create') {
+            targetTabId = 'createLobbyTab';
+        } else if (tabName === 'join') {
+            targetTabId = 'joinLobbyTab';
+        } else if (tabName === 'rooms') {
+            targetTabId = 'roomsTab';
+        }
+        
+        const targetTab = document.getElementById(targetTabId);
         if (targetTab && targetTab.classList) {
             targetTab.classList.add('active');
         } else {
-            console.error('❌ Target tab not found:', tabName + 'LobbyTab');
+            console.error('❌ Target tab not found:', targetTabId);
         }
         
         // Activeer de juiste tab button
@@ -195,6 +204,8 @@ function showLobbyTab(tabName, clickedButton = null) {
             const activeTabButton = document.querySelector(`[onclick*="showLobbyTab('${tabName}'"]`);
             if (activeTabButton && activeTabButton.classList) {
                 activeTabButton.classList.add('active');
+            } else {
+                console.log('⚠️ Tab button not found for:', tabName);
             }
         }
         
