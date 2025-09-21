@@ -275,8 +275,27 @@ function updateStartButton() {
     const canStart = gameState.isHost && lobbyState.players.length >= 2 && 
                      lobbyState.players.every(p => p.isReady);
     
+    // Debug info
+    console.log('🔍 Start button debug:', {
+        isHost: gameState.isHost,
+        playerCount: lobbyState.players.length,
+        allReady: lobbyState.players.every(p => p.isReady),
+        players: lobbyState.players.map(p => ({ name: p.name, isReady: p.isReady })),
+        canStart: canStart
+    });
+    
     startBtn.disabled = !canStart;
-    startBtn.textContent = canStart ? '🎮 Start spel' : '⏳ Wachten op spelers...';
+    
+    if (!gameState.isHost) {
+        startBtn.textContent = '⏳ Alleen host kan starten';
+    } else if (lobbyState.players.length < 2) {
+        startBtn.textContent = `⏳ Minimaal 2 spelers nodig (${lobbyState.players.length}/2)`;
+    } else if (!lobbyState.players.every(p => p.isReady)) {
+        const notReady = lobbyState.players.filter(p => !p.isReady);
+        startBtn.textContent = `⏳ Wachten op: ${notReady.map(p => p.name).join(', ')}`;
+    } else {
+        startBtn.textContent = '🎮 Start spel';
+    }
 }
 
 async function startGame() {

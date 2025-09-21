@@ -320,9 +320,8 @@ async function refreshLobbyData() {
             .single();
             
         if (roomError || !room) {
-            showNotification('Room niet meer beschikbaar');
-            leaveLobby();
-            return;
+            console.log('⚠️ Room niet meer beschikbaar, blijf in demo modus');
+            return; // Don't leave lobby, stay in demo mode
         }
         
         // Get players data
@@ -351,6 +350,12 @@ async function refreshLobbyData() {
             isReady: p.is_ready
         }));
         
+        console.log('🔄 Lobby data refreshed:', {
+            roomCode: room.code,
+            playerCount: players.length,
+            players: players.map(p => ({ name: p.name, isReady: p.is_ready }))
+        });
+        
         // Update UI if we're in lobby
         if (document.getElementById('lobbyStatus').style.display !== 'none') {
             updatePlayersList();
@@ -364,6 +369,7 @@ async function refreshLobbyData() {
         
     } catch (error) {
         console.error('❌ Fout bij verversen lobby data:', error);
+        // Stay in demo mode instead of crashing
     }
 }
 
