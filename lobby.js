@@ -381,6 +381,16 @@ async function startGame() {
     // Start heartbeat for this player
     window.supabaseClient.startHeartbeat();
     
+    // Broadcast game start action to other players
+    if (window.supabaseClient && supabase) {
+        await window.supabaseClient.broadcastAction('game_start', {
+            gameType: lobbyState.room.gameType,
+            players: lobbyState.players,
+            timestamp: new Date().toISOString()
+        });
+        console.log('✅ Game start action broadcasted to other players');
+    }
+    
     // Start spel
     if (lobbyState.room.gameType === 'paardenrace') {
         showRaceGame();

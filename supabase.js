@@ -517,7 +517,7 @@ function setupGameActionSubscription() {
                 console.error('Game action polling error:', error);
             }
         }
-    }, 2000); // Poll every 2 seconds for game actions
+    }, 1000); // Poll every 1 second for faster sync
     
     // Start heartbeat system for active players
     startHeartbeat();
@@ -527,27 +527,79 @@ async function pollGameActions() {
     if (!supabase || !gameState.roomCode) return;
     
     try {
+        // Check for recent actions (last 10 seconds for better sync)
         const { data: actions, error } = await supabase
             .from('game_actions')
             .select('*')
             .eq('room_code', gameState.roomCode)
-            .gt('timestamp', new Date(Date.now() - 5000).toISOString()) // Last 5 seconds
+            .gt('timestamp', new Date(Date.now() - 10000).toISOString()) // Last 10 seconds
             .order('timestamp', { ascending: false })
-            .limit(10);
+            .limit(20); // More actions for better sync
             
         if (error) throw error;
         
-        // Process new actions
+        // Process new actions (exclude our own)
         if (actions && actions.length > 0) {
+            console.log(`🎮 Processing ${actions.length} game actions...`);
+            
             actions.forEach(action => {
                 if (action.player_id !== gameState.playerId) {
+                    console.log(`🎮 Handling action: ${action.action} from ${action.player_id}`);
                     handleGameAction(action);
                 }
             });
         }
         
+        // Also check room status for game start
+        await checkRoomStatusForGameStart();
+        
     } catch (error) {
         console.error('Error polling game actions:', error);
+    }
+}
+
+async function checkRoomStatusForGameStart() {
+    try {
+        const { data: room, error } = await supabase
+            .from('rooms')
+            .select('status')
+            .eq('code', gameState.roomCode)
+            .single();
+            
+        if (error) throw error;
+        
+        // If room status changed to 'playing' and we're not in game yet
+        if (room && room.status === 'playing' && !gameState.currentGame) {
+            console.log('🎮 Room status changed to playing - starting game!');
+            
+            // Get game type from lobby state
+            if (lobbyState.room && lobbyState.room.gameType) {
+                gameState.currentGame = lobbyState.room.gameType;
+                
+                // Update gameState players voor multiplayer
+                gameState.players = lobbyState.players.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    score: 0
+                }));
+                
+                // Start het geselecteerde spel
+                if (lobbyState.room.gameType === 'paardenrace') {
+                    showRaceGame();
+                    setupRaceTrack();
+                } else if (lobbyState.room.gameType === 'mexico') {
+                    showMexicoGame();
+                } else if (lobbyState.room.gameType === 'bussen') {
+                    showBussenGame();
+                }
+                
+                showNotification('🎮 Spel gestart door host!', 'success');
+                console.log('✅ Game started from room status change');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error checking room status:', error);
     }
 }
 
@@ -555,8 +607,14 @@ function handleGameAction(actionData) {
     // Don't process our own actions
     if (actionData.player_id === gameState.playerId) return;
     
+    console.log(`🎮 Processing action: ${actionData.action}`, actionData.data);
+    
     // Process the action based on type
     switch (actionData.action) {
+        case 'game_start':
+            console.log('🎮 Game start action received from host!');
+            handleGameStartFromHost(actionData.data);
+            break;
         case 'roll_dice':
             if (gameState.currentGame === 'paardenrace') {
                 processDiceRoll(actionData.data.dice);
@@ -568,6 +626,46 @@ function handleGameAction(actionData) {
         case 'game_state':
             // Handle game state updates
             break;
+        default:
+            console.log(`🎮 Unknown action type: ${actionData.action}`);
+    }
+}
+
+function handleGameStartFromHost(gameData) {
+    try {
+        console.log('🎮 Starting game from host action:', gameData);
+        
+        if (!lobbyState.room || !lobbyState.room.gameType) {
+            console.error('❌ No lobby room or game type available');
+            return;
+        }
+        
+        // Set game state
+        gameState.currentGame = lobbyState.room.gameType;
+        lobbyState.gameStarted = true;
+        
+        // Update gameState players voor multiplayer
+        gameState.players = lobbyState.players.map(p => ({
+            id: p.id,
+            name: p.name,
+            score: 0
+        }));
+        
+        // Start het geselecteerde spel
+        if (lobbyState.room.gameType === 'paardenrace') {
+            showRaceGame();
+            setupRaceTrack();
+        } else if (lobbyState.room.gameType === 'mexico') {
+            showMexicoGame();
+        } else if (lobbyState.room.gameType === 'bussen') {
+            showBussenGame();
+        }
+        
+        showNotification('🎮 Spel gestart door host!', 'success');
+        console.log('✅ Game started from host action');
+        
+    } catch (error) {
+        console.error('❌ Error starting game from host:', error);
     }
 }
 
