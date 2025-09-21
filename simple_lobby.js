@@ -197,10 +197,15 @@ function startGameLocally() {
     // Determine if this player is the host
     const isHost = currentPlayer && currentPlayer.is_host;
     
+    console.log('🎮 Starting game locally');
+    console.log('🎮 Current player:', currentPlayer);
+    console.log('🎮 Is host:', isHost);
+    console.log('🎮 Game type:', currentRoom.game_type);
+    
     // Set host status for race game
     if (currentRoom.game_type === 'paardenrace') {
         raceState.isHost = isHost;
-        console.log(`🏇 Race game - Host status: ${isHost}`);
+        console.log(`🏇 Race game - Host status set to: ${raceState.isHost}`);
     }
     
     // Start the selected game

@@ -426,6 +426,13 @@ function startGame(gameType) {
 function showRaceGame() {
     showScreen('paardenraceGame');
     resetRaceState();
+    
+    // Set host status for single player mode
+    if (!gameState.isMultiplayer) {
+        raceState.isHost = true;
+        console.log('🏇 Single player mode - Host status set to true');
+    }
+    
     startBettingPhase();
 }
 
@@ -604,6 +611,8 @@ function endBettingPhase() {
 
 function startRacePhase() {
     console.log('🏇 Starting race phase');
+    console.log('🏇 Host status:', raceState.isHost);
+    console.log('🏇 Game state:', gameState.isMultiplayer);
     
     raceState.phase = 'racing';
     
@@ -623,15 +632,19 @@ function startRacePhase() {
     // Update UI
     updateBetCounts();
     
-    // Start automatic card drawing (only for host)
-    if (raceState.isHost) {
+    // Start automatic card drawing (only for host in multiplayer, or always in single player)
+    if (raceState.isHost || !gameState.isMultiplayer) {
+        console.log('🎴 Starting automatic card drawing');
         startAutomaticCardDrawing();
+    } else {
+        console.log('🎴 Not starting automatic drawing - not host');
     }
     
-    // Hide manual draw button for automatic mode
+    // Show manual draw button as fallback (always visible for debugging)
     const drawButton = document.getElementById('drawCard');
     if (drawButton) {
-        drawButton.style.display = 'none';
+        drawButton.style.display = 'block';
+        drawButton.textContent = 'Trek Kaart (Handmatig)';
     }
 }
 
@@ -715,15 +728,24 @@ function createDrawPile() {
 }
 
 function drawRaceCard() {
-    if (raceState.phase !== 'racing' || raceState.gameOver) return;
+    console.log('🎴 drawRaceCard called - Phase:', raceState.phase, 'GameOver:', raceState.gameOver);
+    
+    if (raceState.phase !== 'racing' || raceState.gameOver) {
+        console.log('🎴 Cannot draw card - wrong phase or game over');
+        return;
+    }
     
     if (raceState.drawPile.length === 0) {
-        console.log('No more cards to draw');
+        console.log('🎴 No more cards to draw');
         return;
     }
     
     // Draw card
     raceState.currentCard = raceState.drawPile.pop();
+    raceState.drawnCards++;
+    
+    console.log(`🎴 Drew card: ${raceState.currentCard.rank} ${raceState.currentCard.suit}`);
+    console.log('🎴 Remaining cards:', raceState.drawPile.length);
     
     // Show card
     const cardElement = document.getElementById('currentCard');
@@ -733,6 +755,9 @@ function drawRaceCard() {
         cardElement.textContent = raceState.currentCard.rank + raceState.currentCard.suit;
         cardElement.className = `card ${raceState.currentCard.suit === '♥' || raceState.currentCard.suit === '♦' ? 'red' : 'black'} revealing`;
         descriptionElement.textContent = `${raceState.currentCard.rank} ${raceState.currentCard.suit}`;
+        console.log('🎴 Card UI updated');
+    } else {
+        console.log('🎴 Card elements not found!');
     }
     
     // Move horse forward
@@ -748,8 +773,6 @@ function drawRaceCard() {
     if (gameState.settings.soundEnabled) {
         playSound('card');
     }
-    
-    console.log(`Drew card: ${raceState.currentCard.rank} ${raceState.currentCard.suit}`);
 }
 
 function moveHorse(suit, direction) {
@@ -893,26 +916,36 @@ function resetRaceGame() {
 
 function startAutomaticCardDrawing() {
     console.log('🎴 Starting automatic card drawing');
+    console.log('🎴 Draw pile size:', raceState.drawPile.length);
+    console.log('🎴 Card draw delay:', raceState.cardDrawDelay);
     
     // Clear any existing interval
     if (raceState.cardDrawInterval) {
         clearInterval(raceState.cardDrawInterval);
+        console.log('🎴 Cleared existing interval');
     }
     
     // Start drawing cards automatically
     raceState.cardDrawInterval = setInterval(() => {
+        console.log('🎴 Interval tick - Phase:', raceState.phase, 'GameOver:', raceState.gameOver, 'DrawPile:', raceState.drawPile.length);
+        
         if (raceState.phase === 'racing' && !raceState.gameOver && raceState.drawPile.length > 0) {
+            console.log('🎴 Drawing card automatically');
             drawRaceCard();
             
             // Broadcast card to other players if multiplayer
             if (window.simpleSupabase && raceState.isHost) {
+                console.log('🎴 Broadcasting card to other players');
                 broadcastRaceCard(raceState.currentCard);
             }
         } else {
             // Stop automatic drawing
+            console.log('🎴 Stopping automatic drawing - conditions not met');
             stopAutomaticCardDrawing();
         }
     }, raceState.cardDrawDelay);
+    
+    console.log('🎴 Automatic card drawing interval started');
 }
 
 function stopAutomaticCardDrawing() {
