@@ -5,23 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Drankspel Party 🎉🍻</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.skypack.dev/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
-        // Fallback als Supabase niet laadt
+        // Enhanced Supabase availability check with debugging
         window.addEventListener('load', function() {
-            if (typeof window.supabase === 'undefined') {
-                console.log('⚠️ Supabase CDN gefaald, probeer alternatieve CDN...');
-                // Probeer alternatieve CDN
-                const script = document.createElement('script');
-                script.src = 'https://unpkg.com/@supabase/supabase-js@2';
-                script.onload = function() {
-                    console.log('✅ Supabase geladen via fallback CDN');
-                };
-                script.onerror = function() {
-                    console.log('❌ Alle Supabase CDNs gefaald, demo modus');
-                };
-                document.head.appendChild(script);
-            }
+            setTimeout(() => {
+                console.log('🔍 Checking Supabase availability...');
+                console.log('window.supabase:', typeof window.supabase);
+                console.log('window.supabaseClient:', typeof window.supabaseClient);
+                
+                if (typeof window.supabase === 'undefined') {
+                    console.log('⚠️ Supabase niet beschikbaar, demo modus');
+                    window.supabaseAvailable = false;
+                    
+                    // Try to load from alternative CDN
+                    console.log('🔄 Trying alternative CDN...');
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+                    script.onload = function() {
+                        console.log('✅ Supabase geladen via alternatieve CDN');
+                        window.supabaseAvailable = true;
+                    };
+                    script.onerror = function() {
+                        console.log('❌ Alle CDNs gefaald');
+                        window.supabaseAvailable = false;
+                    };
+                    document.head.appendChild(script);
+                } else {
+                    console.log('✅ Supabase geladen');
+                    window.supabaseAvailable = true;
+                }
+            }, 500);
         });
     </script>
 </head>

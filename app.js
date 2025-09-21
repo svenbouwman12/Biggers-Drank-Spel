@@ -89,10 +89,18 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeSupabaseConnection() {
+    // Check if Supabase is available
+    if (typeof window.supabase === 'undefined') {
+        console.log('⚠️ Supabase library niet beschikbaar, demo modus');
+        initializeWebSocket();
+        return;
+    }
+    
     // Initialiseer Supabase verbinding
     if (window.supabaseClient) {
         try {
             window.supabaseClient.initialize();
+            console.log('✅ Supabase verbinding geïnitialiseerd');
         } catch (error) {
             console.log('🔄 Supabase initialisatie gefaald, fallback naar demo modus');
             initializeWebSocket();

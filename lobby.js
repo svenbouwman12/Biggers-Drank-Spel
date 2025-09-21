@@ -230,6 +230,12 @@ async function refreshLobbyData() {
     
     console.log('🔄 Manual lobby refresh triggered');
     
+    // Check if Supabase is available
+    if (typeof window.supabase === 'undefined') {
+        showNotification('Supabase niet beschikbaar - demo modus', 'warning');
+        return;
+    }
+    
     if (window.supabaseClient && supabase) {
         try {
             await window.supabaseClient.refreshLobbyData();
@@ -239,7 +245,7 @@ async function refreshLobbyData() {
             showNotification('Fout bij verversen lobby', 'error');
         }
     } else {
-        showNotification('Supabase niet beschikbaar voor refresh', 'warning');
+        showNotification('Supabase client niet geïnitialiseerd', 'warning');
     }
 }
 
