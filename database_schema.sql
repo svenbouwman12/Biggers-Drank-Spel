@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS players (
     is_host BOOLEAN DEFAULT FALSE,
     is_ready BOOLEAN DEFAULT FALSE,
     score INTEGER DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'left')),
     joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -77,6 +78,8 @@ CREATE INDEX IF NOT EXISTS idx_players_room_code ON players(room_code);
 CREATE INDEX IF NOT EXISTS idx_players_host ON players(is_host);
 CREATE INDEX IF NOT EXISTS idx_players_ready ON players(is_ready);
 CREATE INDEX IF NOT EXISTS idx_players_last_seen ON players(last_seen); -- Voor agressieve cleanup
+CREATE INDEX IF NOT EXISTS idx_players_status ON players(status); -- Voor leave tracking
+CREATE INDEX IF NOT EXISTS idx_players_room_status ON players(room_code, status); -- Voor room cleanup
 
 -- Game actions indexes
 CREATE INDEX IF NOT EXISTS idx_game_actions_room_code ON game_actions(room_code);

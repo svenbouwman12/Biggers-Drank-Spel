@@ -26,6 +26,9 @@ function initializeSupabase() {
         // Test verbinding
         testSupabaseConnection();
         
+        // Setup page unload event to mark player as left
+        setupPageUnloadHandler();
+        
         // Clean up empty rooms and inactive players on startup
         setTimeout(() => {
             cleanupInactivePlayers();
@@ -157,38 +160,43 @@ async function joinRoomInDatabase(roomCode, playerData) {
 
 async function getRoomsFromDatabase() {
     try {
-        console.log('🔄 Fetching available rooms with players...');
-        
-        // First get all waiting rooms with their players
+        console.log('🔄 Fetching available rooms with ACTIVE players...');
+
+        // First get all waiting rooms with their ACTIVE players only
         const { data: rooms, error } = await supabase
             .from('rooms')
             .select(`
                 *,
-                players (id, name, is_ready, joined_at)
+                players!inner (id, name, is_ready, joined_at, status)
             `)
             .eq('status', 'waiting')
+            .eq('players.status', 'active') // Only rooms with ACTIVE players
             .order('created_at', { ascending: false });
-            
+
         if (error) throw error;
-        
-        // Filter out rooms with no players or empty player arrays
-        const roomsWithPlayers = (rooms || []).filter(room => {
-            const hasPlayers = room.players && room.players.length > 0;
-            if (!hasPlayers) {
-                console.log(`🗑️ Filtering out empty room: ${room.name} (${room.code})`);
+
+        // Filter out rooms with no active players
+        const roomsWithActivePlayers = (rooms || []).filter(room => {
+            const activePlayers = room.players.filter(p => p.status === 'active');
+            const hasActivePlayers = activePlayers.length > 0;
+            
+            if (!hasActivePlayers) {
+                console.log(`🗑️ Filtering out room with no active players: ${room.name} (${room.code})`);
+            } else {
+                console.log(`✅ Room has ${activePlayers.length} active players: ${room.name} (${room.code})`);
             }
-            return hasPlayers;
+            return hasActivePlayers;
         });
-        
-        console.log(`✅ ${roomsWithPlayers.length} rooms with players fetched (${(rooms || []).length} total rooms)`);
-        
-        // Optional: Clean up empty rooms (run in background, don't wait for it)
-        if ((rooms || []).length > roomsWithPlayers.length) {
+
+        console.log(`✅ ${roomsWithActivePlayers.length} rooms with ACTIVE players fetched (${(rooms || []).length} total rooms)`);
+
+        // Optional: Clean up rooms with no active players (run in background, don't wait for it)
+        if ((rooms || []).length > roomsWithActivePlayers.length) {
             cleanupEmptyRooms();
         }
-        
-        return roomsWithPlayers;
-        
+
+        return roomsWithActivePlayers;
+
     } catch (error) {
         console.error('❌ Fout bij ophalen rooms:', error);
         return [];
@@ -286,27 +294,36 @@ async function startGameInDatabase(roomCode) {
 
 async function leaveRoomFromDatabase(playerId, roomCode) {
     try {
-        // Remove player from room
-        const { error } = await supabase
+        console.log('🚪 Leaving room:', roomCode, 'Player:', playerId);
+        
+        // Mark player as 'left' instead of deleting immediately
+        const { error: playerError } = await supabase
             .from('players')
-            .delete()
+            .update({ 
+                status: 'left',
+                last_seen: new Date().toISOString()
+            })
             .eq('id', playerId);
             
-        if (error) throw error;
+        if (playerError) throw playerError;
         
-        // Check if room is empty and delete if so
-        const { data: remainingPlayers } = await supabase
+        console.log('✅ Player marked as left in database');
+        
+        // Check if room has any active players
+        const { data: activePlayers } = await supabase
             .from('players')
             .select('id')
-            .eq('room_code', roomCode);
+            .eq('room_code', roomCode)
+            .eq('status', 'active');
             
-        if (!remainingPlayers || remainingPlayers.length === 0) {
-            console.log('🗑️ Room is empty, deleting:', roomCode);
+        // If no active players left, delete the room
+        if (!activePlayers || activePlayers.length === 0) {
+            console.log('🗑️ Room has no active players, deleting:', roomCode);
             await supabase
                 .from('rooms')
                 .delete()
                 .eq('code', roomCode);
-            console.log('✅ Empty room deleted:', roomCode);
+            console.log('✅ Room deleted (no active players):', roomCode);
             
             // Trigger rooms refresh if someone is viewing the rooms tab
             if (typeof refreshRooms === 'function') {
@@ -316,7 +333,7 @@ async function leaveRoomFromDatabase(playerId, roomCode) {
             }
         }
         
-        console.log('✅ Speler uit room verwijderd');
+        console.log('✅ Speler status op left gezet');
         return true;
         
     } catch (error) {
@@ -660,6 +677,41 @@ async function updatePlayerHeartbeat() {
     }
 }
 
+function setupPageUnloadHandler() {
+    console.log('🔗 Setting up page unload handler for leave tracking');
+    
+    // Handle page unload (refresh, close, navigate away)
+    window.addEventListener('beforeunload', async (event) => {
+        if (gameState.isMultiplayer && gameState.playerId && gameState.roomCode) {
+            console.log('🚪 Page unloading - marking player as left');
+            
+            try {
+                // Mark player as left in database
+                if (supabase) {
+                    await supabase
+                        .from('players')
+                        .update({ 
+                            status: 'left',
+                            last_seen: new Date().toISOString()
+                        })
+                        .eq('id', gameState.playerId);
+                    console.log('✅ Player marked as left during page unload');
+                }
+            } catch (error) {
+                console.log('⚠️ Could not mark player as left during unload:', error);
+            }
+        }
+    });
+    
+    // Handle visibility change (tab switching, minimizing)
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && gameState.isMultiplayer && gameState.playerId) {
+            console.log('👁️ Tab hidden - updating last_seen');
+            updatePlayerHeartbeat();
+        }
+    });
+}
+
 async function cleanupInactivePlayers() {
     try {
         console.log('🧹 Cleaning up inactive players...');
@@ -731,7 +783,7 @@ async function nuclearCleanup() {
 
 async function cleanupEmptyRooms() {
     try {
-        console.log('🧹 AGGRESSIVE cleanup of empty rooms...');
+        console.log('🧹 AGGRESSIVE cleanup of empty rooms (active players only)...');
         
         // Get all waiting rooms
         const { data: allRooms, error: roomsError } = await supabase
@@ -747,31 +799,32 @@ async function cleanupEmptyRooms() {
             return;
         }
         
-        console.log(`🔍 AGGRESSIVELY checking ${allRooms.length} rooms...`);
+        console.log(`🔍 AGGRESSIVELY checking ${allRooms.length} rooms for ACTIVE players...`);
         
-        // AGGRESSIVE: Delete all rooms that don't have active players
+        // AGGRESSIVE: Delete all rooms that don't have ACTIVE players
         let deletedCount = 0;
         const roomsToDelete = [];
         
         for (const room of allRooms) {
-            const { data: players } = await supabase
+            const { data: activePlayers } = await supabase
                 .from('players')
-                .select('id, name, last_seen')
-                .eq('room_code', room.code);
+                .select('id, name, status')
+                .eq('room_code', room.code)
+                .eq('status', 'active'); // Only count ACTIVE players
                 
-            const hasActivePlayers = players && players.length > 0;
+            const hasActivePlayers = activePlayers && activePlayers.length > 0;
             
             if (!hasActivePlayers) {
                 roomsToDelete.push(room.code);
-                console.log(`🗑️ MARKED for deletion: ${room.name} (${room.code})`);
+                console.log(`🗑️ MARKED for deletion (no active players): ${room.name} (${room.code})`);
             } else {
-                console.log(`✅ Room has ${players.length} players: ${room.name} (${room.code})`);
+                console.log(`✅ Room has ${activePlayers.length} ACTIVE players: ${room.name} (${room.code})`);
             }
         }
         
         // AGGRESSIVE: Delete all marked rooms at once
         if (roomsToDelete.length > 0) {
-            console.log(`🔥 AGGRESSIVELY deleting ${roomsToDelete.length} empty rooms...`);
+            console.log(`🔥 AGGRESSIVELY deleting ${roomsToDelete.length} rooms with no active players...`);
             
             for (const roomCode of roomsToDelete) {
                 try {
@@ -785,16 +838,16 @@ async function cleanupEmptyRooms() {
                         console.error(`❌ Error deleting room ${roomCode}:`, deleteError);
                     } else {
                         deletedCount++;
-                        console.log(`🔥 FORCE DELETED: ${roomCode}`);
+                        console.log(`🔥 FORCE DELETED (no active players): ${roomCode}`);
                     }
                 } catch (error) {
                     console.error(`❌ Exception deleting room ${roomCode}:`, error);
                 }
             }
             
-            console.log(`🔥 AGGRESSIVE cleanup completed: ${deletedCount} rooms deleted`);
+            console.log(`🔥 AGGRESSIVE cleanup completed: ${deletedCount} rooms deleted (no active players)`);
         } else {
-            console.log('✅ No empty rooms found');
+            console.log('✅ All rooms have active players');
         }
         
     } catch (error) {
