@@ -331,12 +331,27 @@ async function startGame() {
         return;
     }
     
-    // Start game in database
-    const room = await window.supabaseClient.startGame(gameState.roomCode);
+    console.log('🎮 Starting game...', {
+        roomCode: gameState.roomCode,
+        isHost: gameState.isHost,
+        playerCount: lobbyState.players.length
+    });
     
-    if (!room) {
-        showNotification('Fout bij starten spel. Probeer opnieuw.');
-        return;
+    // Start game in database
+    let room = null;
+    
+    if (window.supabaseClient && supabase) {
+        room = await window.supabaseClient.startGame(gameState.roomCode);
+        
+        if (!room) {
+            console.error('❌ Failed to start game in database, trying local mode');
+            showNotification('Database fout, start lokaal...', 'warning');
+            // Continue with local game start
+        } else {
+            console.log('✅ Game started successfully in database:', room);
+        }
+    } else {
+        console.log('🔄 Supabase not available, starting local game');
     }
     
     // Start het geselecteerde spel

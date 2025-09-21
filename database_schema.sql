@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS rooms (
     host_id VARCHAR(50) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting', 'playing', 'finished')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    started_at TIMESTAMP WITH TIME ZONE
 );
 
 -- ============================================================================

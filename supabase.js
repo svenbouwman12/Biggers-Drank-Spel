@@ -190,26 +190,65 @@ async function updatePlayerReadyStatus(playerId, isReady) {
 
 async function startGameInDatabase(roomCode) {
     try {
-        // Update room status
-        const { data: room, error: roomError } = await supabase
+        console.log('🎮 Starting game for room:', roomCode);
+        
+        // First, check if room exists
+        const { data: existingRoom, error: checkError } = await supabase
             .from('rooms')
-            .update({ status: 'playing' })
+            .select('*')
             .eq('code', roomCode)
-            .select()
-            .single();
+            .eq('status', 'waiting');
             
-        if (roomError) throw roomError;
+        if (checkError) {
+            console.error('❌ Error checking room:', checkError);
+            throw checkError;
+        }
+        
+        if (!existingRoom || existingRoom.length === 0) {
+            console.error('❌ Room not found or not in waiting status:', roomCode);
+            throw new Error('Room niet gevonden of niet beschikbaar');
+        }
+        
+        console.log('✅ Room found:', existingRoom[0]);
+        
+        // Update room status
+        const { data: updatedRoom, error: roomError } = await supabase
+            .from('rooms')
+            .update({ 
+                status: 'playing',
+                started_at: new Date().toISOString()
+            })
+            .eq('code', roomCode)
+            .eq('status', 'waiting') // Double check status
+            .select();
+            
+        if (roomError) {
+            console.error('❌ Error updating room status:', roomError);
+            throw roomError;
+        }
+        
+        if (!updatedRoom || updatedRoom.length === 0) {
+            console.error('❌ No room was updated');
+            throw new Error('Room kon niet worden bijgewerkt');
+        }
+        
+        console.log('✅ Room status updated:', updatedRoom[0]);
         
         // Update all players to ready
-        const { error: playersError } = await supabase
+        const { data: updatedPlayers, error: playersError } = await supabase
             .from('players')
             .update({ is_ready: true })
-            .eq('room_code', roomCode);
+            .eq('room_code', roomCode)
+            .select();
             
-        if (playersError) throw playersError;
+        if (playersError) {
+            console.error('❌ Error updating players:', playersError);
+            throw playersError;
+        }
         
-        console.log('✅ Spel gestart in database:', room);
-        return room;
+        console.log('✅ Players updated:', updatedPlayers);
+        console.log('✅ Spel gestart in database:', updatedRoom[0]);
+        return updatedRoom[0];
         
     } catch (error) {
         console.error('❌ Fout bij starten spel:', error);
