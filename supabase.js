@@ -227,24 +227,31 @@ async function startGameInDatabase(roomCode) {
     try {
         console.log('🎮 Starting game for room:', roomCode);
         
-        // First, check if room exists and get current status
-        const { data: existingRoom, error: checkError } = await supabase
+        // First, verify room exists and get current status
+        const { data: existingRooms, error: checkError } = await supabase
             .from('rooms')
             .select('*')
-            .eq('code', roomCode)
-            .single(); // Use single() to get one record
+            .eq('code', roomCode);
             
         if (checkError) {
             console.error('❌ Error checking room:', checkError);
             throw checkError;
         }
         
-        if (!existingRoom) {
+        if (!existingRooms || existingRooms.length === 0) {
             console.error('❌ Room not found:', roomCode);
             throw new Error('Room niet gevonden');
         }
         
+        const existingRoom = existingRooms[0];
         console.log('✅ Room found:', existingRoom);
+        console.log('🔍 Room details:', {
+            code: existingRoom.code,
+            status: existingRoom.status,
+            name: existingRoom.name,
+            game_type: existingRoom.game_type,
+            host_id: existingRoom.host_id
+        });
         
         // Check if room is already playing
         if (existingRoom.status === 'playing') {
@@ -258,45 +265,64 @@ async function startGameInDatabase(roomCode) {
             throw new Error(`Room is in ${existingRoom.status} status, cannot start game`);
         }
         
-        // Update room status with more flexible conditions
-        const { data: updatedRoom, error: roomError } = await supabase
+        // Check if room has active players
+        const { data: activePlayers } = await supabase
+            .from('players')
+            .select('id, name, status')
+            .eq('room_code', roomCode)
+            .eq('status', 'active');
+            
+        if (!activePlayers || activePlayers.length === 0) {
+            console.error('❌ No active players found in room:', roomCode);
+            throw new Error('Geen actieve spelers in room');
+        }
+        
+        console.log('✅ Room validation passed, proceeding with update...');
+        console.log('👥 Active players:', activePlayers.map(p => p.name));
+        
+        // Update room status - DON'T use .single() on updates!
+        const { data: updatedRooms, error: roomError } = await supabase
             .from('rooms')
             .update({ 
                 status: 'playing',
                 started_at: new Date().toISOString()
             })
             .eq('code', roomCode)
-            .select()
-            .single(); // Use single() to get one record
+            .eq('status', 'waiting') // Only update if still waiting
+            .select(); // Return updated rows as array
+            
+        console.log('🔄 Update query executed, checking results...');
             
         if (roomError) {
             console.error('❌ Error updating room status:', roomError);
+            throw roomError;
+        }
+        
+        // Check if any rows were updated
+        if (!updatedRooms || updatedRooms.length === 0) {
+            console.log('⚠️ No rows updated - room might have been modified by another process');
             
-            // Try alternative update without status condition
-            const { data: altUpdatedRoom, error: altError } = await supabase
+            // Re-check room status
+            const { data: currentRooms } = await supabase
                 .from('rooms')
-                .update({ 
-                    status: 'playing',
-                    started_at: new Date().toISOString()
-                })
-                .eq('code', roomCode)
-                .select()
-                .single();
+                .select('*')
+                .eq('code', roomCode);
                 
-            if (altError) {
-                console.error('❌ Alternative update also failed:', altError);
-                throw altError;
+            if (currentRooms && currentRooms.length > 0) {
+                const currentRoom = currentRooms[0];
+                if (currentRoom.status === 'playing') {
+                    console.log('✅ Room is now playing (updated by another process)');
+                    return currentRoom;
+                } else {
+                    console.error('❌ Room status is still:', currentRoom.status);
+                    throw new Error(`Room status is ${currentRoom.status}, cannot start game`);
+                }
+            } else {
+                throw new Error('Room not found after update attempt');
             }
-            
-            console.log('✅ Room status updated (alternative method):', altUpdatedRoom);
-            return altUpdatedRoom;
         }
         
-        if (!updatedRoom) {
-            console.error('❌ No room was updated');
-            throw new Error('Room kon niet worden bijgewerkt');
-        }
-        
+        const updatedRoom = updatedRooms[0];
         console.log('✅ Room status updated:', updatedRoom);
         
         // Update all players to ready (optional, players are already ready when they join)
