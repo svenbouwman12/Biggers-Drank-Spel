@@ -786,27 +786,37 @@ async function checkRoomStatusForGameStart() {
 }
 
 function handleGameAction(actionData) {
-    // Don't process our own actions
-    if (actionData.player_id === gameState.playerId) return;
-    
-    console.log(`🎮 Processing action: ${actionData.action}`, actionData.data);
+    console.log(`🎮 Processing action: ${actionData.action} from ${actionData.player_id}`, actionData.data);
     
     // Process the action based on type
     switch (actionData.action) {
         case 'game_start':
-            console.log('🎮 Game start action received from host!');
-            handleGameStartFromHost(actionData.data);
+            // Handle game start for both host and joined players
+            if (actionData.player_id === gameState.playerId) {
+                console.log('🎮 Game start action received from self (host) - starting game locally');
+                handleGameStartFromHost(actionData.data);
+            } else {
+                console.log('🎮 Game start action received from other player - starting game');
+                handleGameStartFromHost(actionData.data);
+            }
             break;
         case 'roll_dice':
-            if (gameState.currentGame === 'paardenrace') {
+            // Don't process our own dice rolls
+            if (actionData.player_id !== gameState.playerId && gameState.currentGame === 'paardenrace') {
                 processDiceRoll(actionData.data.dice);
             }
             break;
         case 'player_turn':
-            // Handle turn changes
+            // Handle turn changes (from other players)
+            if (actionData.player_id !== gameState.playerId) {
+                // Handle turn changes
+            }
             break;
         case 'game_state':
-            // Handle game state updates
+            // Handle game state updates (from other players)
+            if (actionData.player_id !== gameState.playerId) {
+                // Handle game state updates
+            }
             break;
         default:
             console.log(`🎮 Unknown action type: ${actionData.action}`);
@@ -816,6 +826,12 @@ function handleGameAction(actionData) {
 function handleGameStartFromHost(gameData) {
     try {
         console.log('🎮 Starting game from host action:', gameData);
+        
+        // Check if game is already started
+        if (gameState.currentGame) {
+            console.log('⚠️ Game already started, ignoring duplicate start action');
+            return;
+        }
         
         if (!lobbyState.room || !lobbyState.room.gameType) {
             console.error('❌ No lobby room or game type available');
@@ -833,6 +849,12 @@ function handleGameStartFromHost(gameData) {
             score: 0
         }));
         
+        console.log('🎮 Starting game:', {
+            gameType: lobbyState.room.gameType,
+            players: gameState.players,
+            isHost: gameState.isHost
+        });
+        
         // Start het geselecteerde spel
         if (lobbyState.room.gameType === 'paardenrace') {
             showRaceGame();
@@ -843,7 +865,7 @@ function handleGameStartFromHost(gameData) {
             showBussenGame();
         }
         
-        showNotification('🎮 Spel gestart door host!', 'success');
+        showNotification('🎮 Spel gestart!', 'success');
         console.log('✅ Game started from host action');
         
     } catch (error) {

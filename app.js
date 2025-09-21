@@ -84,10 +84,12 @@ document.addEventListener('DOMContentLoaded', function() {
     updatePlayerCount();
     updateScoreboard();
     
-    // Wacht tot pagina volledig geladen is voor Supabase
+    // Wacht tot pagina volledig geladen is voor Simple Supabase
     window.addEventListener('load', function() {
         setTimeout(() => {
-            initializeSupabaseConnection();
+            if (window.simpleSupabase) {
+                window.simpleSupabase.initialize();
+            }
         }, 500); // Wacht 500ms extra
     });
     
