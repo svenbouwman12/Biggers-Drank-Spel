@@ -218,9 +218,18 @@ async function addGameEvent(eventData) {
     try {
         console.log('🎮 Adding game event:', eventData.event_type);
         
+        // Remove timestamp field and use created_at instead
+        const cleanEventData = {
+            room_code: eventData.room_code,
+            event_type: eventData.event_type,
+            event_data: eventData.event_data,
+            player_id: eventData.player_id || null
+            // created_at will be set automatically by the database
+        };
+        
         const { data, error } = await supabase
             .from('game_events')
-            .insert([eventData])
+            .insert([cleanEventData])
             .select()
             .single();
             

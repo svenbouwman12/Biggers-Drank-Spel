@@ -1010,8 +1010,7 @@ function broadcastRaceCard(card) {
             gameOver: raceState.gameOver,
             winner: raceState.winner,
             timestamp: Date.now()
-        },
-        timestamp: new Date().toISOString()
+        }
     };
     
     console.log('📡 Broadcasting race card:', card);
@@ -1099,8 +1098,7 @@ function broadcastBettingUpdate() {
             playerBets: raceState.playerBets,
             bettingTimer: raceState.bettingTimer,
             timestamp: Date.now()
-        },
-        timestamp: new Date().toISOString()
+        }
     };
     
     console.log('📡 Broadcasting betting update');
@@ -1134,8 +1132,7 @@ function broadcastRaceStart() {
             raceSeed: raceState.raceSeed,
             playerBets: raceState.playerBets,
             timestamp: Date.now()
-        },
-        timestamp: new Date().toISOString()
+        }
     };
     
     console.log('📡 Broadcasting race start');
