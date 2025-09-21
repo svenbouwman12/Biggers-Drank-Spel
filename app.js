@@ -170,6 +170,12 @@ function showLobbyTab(tabName) {
     // Toon geselecteerde tab
     document.getElementById(tabName + 'LobbyTab').classList.add('active');
     event.target.classList.add('active');
+    
+    // Automatisch rooms verversen wanneer je naar "rooms" tab gaat
+    if (tabName === 'rooms') {
+        console.log('🔄 Auto-refreshing rooms...');
+        refreshRooms(true); // Silent refresh
+    }
 }
 
 // ============================================================================

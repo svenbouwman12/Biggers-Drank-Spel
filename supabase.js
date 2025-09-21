@@ -148,19 +148,21 @@ async function joinRoomInDatabase(roomCode, playerData) {
 
 async function getRoomsFromDatabase() {
     try {
+        console.log('🔄 Fetching available rooms...');
+        
         const { data: rooms, error } = await supabase
             .from('rooms')
             .select(`
                 *,
-                players (id, name, is_ready)
+                players (id, name, is_ready, joined_at)
             `)
             .eq('status', 'waiting')
             .order('created_at', { ascending: false });
             
         if (error) throw error;
         
-        console.log('✅ Rooms opgehaald:', rooms);
-        return rooms;
+        console.log(`✅ ${rooms ? rooms.length : 0} rooms fetched:`, rooms);
+        return rooms || [];
         
     } catch (error) {
         console.error('❌ Fout bij ophalen rooms:', error);

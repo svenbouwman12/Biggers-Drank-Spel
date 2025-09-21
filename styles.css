@@ -240,6 +240,12 @@ h3 {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
+.room-status {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-top: 5px;
+}
+
 .room-info h4 {
     margin: 0 0 8px 0;
     color: #333;

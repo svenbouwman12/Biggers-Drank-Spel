@@ -416,16 +416,28 @@ async function leaveLobby() {
     showNotification('Lobby verlaten');
 }
 
-async function refreshRooms() {
-    showNotification('Rooms verversen...');
+async function refreshRooms(silent = false) {
+    if (!silent) {
+        showNotification('Rooms verversen...');
+    }
     
     try {
+        // Check if Supabase is available
+        if (!window.supabaseClient || !supabase) {
+            console.log('🔄 Supabase not available, showing demo rooms');
+            showDemoRooms();
+            return;
+        }
+        
         const rooms = await window.supabaseClient.getRooms();
         
         const roomsList = document.getElementById('roomsList');
         
         if (rooms.length === 0) {
             roomsList.innerHTML = '<p>Geen beschikbare rooms gevonden.</p>';
+            if (!silent) {
+                showNotification('Geen actieve lobbies gevonden');
+            }
             return;
         }
         
@@ -441,19 +453,48 @@ async function refreshRooms() {
                 <div class="room-info">
                     <h4>${gameIcon} ${room.name}</h4>
                     <p>${getGameDisplayName(room.game_type)} • ${playerCount}/${room.max_players} spelers</p>
-                    <p>Room code: ${room.code}</p>
+                    <p>Room code: <strong>${room.code}</strong></p>
+                    <p class="room-status">Status: ${room.status === 'waiting' ? '🟢 Wachtend' : '🔴 Bezig'}</p>
                 </div>
-                <button class="btn btn-small" onclick="joinRoomByCode('${room.code}')">Join</button>
+                <button class="btn btn-small" onclick="joinRoomByCode('${room.code}')" 
+                        ${room.status !== 'waiting' ? 'disabled' : ''}>
+                    ${room.status === 'waiting' ? 'Join' : 'Vol'}
+                </button>
             `;
             roomsList.appendChild(roomDiv);
         });
         
-        showNotification(`${rooms.length} rooms gevonden!`);
+        console.log(`✅ ${rooms.length} rooms loaded`);
+        if (!silent) {
+            showNotification(`${rooms.length} actieve lobbies gevonden!`);
+        }
         
     } catch (error) {
         console.error('Fout bij ophalen rooms:', error);
-        showNotification('Fout bij ophalen rooms. Probeer opnieuw.');
+        if (!silent) {
+            showNotification('Fout bij ophalen rooms. Probeer opnieuw.');
+        }
+        // Show demo rooms as fallback
+        showDemoRooms();
     }
+}
+
+function showDemoRooms() {
+    const roomsList = document.getElementById('roomsList');
+    roomsList.innerHTML = `
+        <div class="room-item">
+            <div class="room-info">
+                <h4>🎉 Demo Lobby</h4>
+                <p>🏇 Paardenrace • 2/4 spelers</p>
+                <p>Room code: <strong>DEMO12</strong></p>
+                <p class="room-status">Status: 🟢 Wachtend</p>
+            </div>
+            <button class="btn btn-small" onclick="joinRoomByCode('DEMO12')">Join</button>
+        </div>
+        <p style="text-align: center; color: #666; margin-top: 15px;">
+            💡 Dit zijn demo rooms. Maak je eigen lobby voor echte multiplayer!
+        </p>
+    `;
 }
 
 function getGameIcon(gameType) {
