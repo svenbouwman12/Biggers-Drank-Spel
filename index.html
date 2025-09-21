@@ -150,7 +150,10 @@
                             <button class="btn btn-small" onclick="joinRoomByCode('ABC123')">Join</button>
                         </div>
                     </div>
-                    <button class="btn btn-secondary" onclick="refreshRooms()">🔄 Ververs</button>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                        <button class="btn btn-secondary" onclick="refreshRooms()">🔄 Ververs</button>
+                        <button class="btn btn-warning" onclick="forceCleanup()" style="background: #ff6b6b; color: white;">💥 Force Cleanup</button>
+                    </div>
                 </div>
 
                 <!-- Lobby status -->

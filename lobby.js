@@ -526,6 +526,32 @@ function showDemoRooms() {
     `;
 }
 
+async function forceCleanup() {
+    if (!confirm('💥 FORCE CLEANUP - Dit verwijdert ALLE lege lobbies. Doorgaan?')) {
+        return;
+    }
+    
+    console.log('💥 User triggered force cleanup');
+    showNotification('💥 Force cleanup gestart...', 'warning');
+    
+    try {
+        if (window.supabaseClient && window.supabaseClient.nuclearCleanup) {
+            await window.supabaseClient.nuclearCleanup();
+            showNotification('💥 Force cleanup voltooid!', 'success');
+            
+            // Refresh rooms list
+            setTimeout(() => {
+                refreshRooms(true);
+            }, 1000);
+        } else {
+            showNotification('Supabase niet beschikbaar voor cleanup', 'error');
+        }
+    } catch (error) {
+        console.error('💥 Force cleanup error:', error);
+        showNotification('💥 Force cleanup gefaald!', 'error');
+    }
+}
+
 function getGameIcon(gameType) {
     const icons = {
         'paardenrace': '🏇',

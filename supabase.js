@@ -621,7 +621,7 @@ function startContinuousCleanup() {
     
     console.log('🧹 Starting continuous cleanup (every 10 seconds)');
     
-    // Run cleanup every 10 seconds
+    // Run AGGRESSIVE cleanup every 5 seconds
     continuousCleanupInterval = setInterval(async () => {
         try {
             await cleanupInactivePlayers();
@@ -629,7 +629,7 @@ function startContinuousCleanup() {
         } catch (error) {
             console.error('❌ Continuous cleanup error:', error);
         }
-    }, 10000); // Every 10 seconds
+    }, 5000); // Every 5 seconds - AGGRESSIVE
 }
 
 function stopContinuousCleanup() {
@@ -686,9 +686,52 @@ async function cleanupInactivePlayers() {
     }
 }
 
+// NUCLEAR OPTION: Force delete ALL empty rooms
+async function nuclearCleanup() {
+    try {
+        console.log('💥 NUCLEAR CLEANUP - Deleting ALL empty rooms...');
+        
+        // Get all rooms
+        const { data: allRooms, error } = await supabase
+            .from('rooms')
+            .select('code, name')
+            .eq('status', 'waiting');
+            
+        if (error) throw error;
+        
+        if (!allRooms || allRooms.length === 0) {
+            console.log('💥 No rooms to nuke');
+            return;
+        }
+        
+        console.log(`💥 NUKING ${allRooms.length} rooms...`);
+        
+        // NUCLEAR: Delete ALL rooms and let players handle it
+        let nuked = 0;
+        for (const room of allRooms) {
+            try {
+                await supabase
+                    .from('rooms')
+                    .delete()
+                    .eq('code', room.code);
+                    
+                nuked++;
+                console.log(`💥 NUKED: ${room.name} (${room.code})`);
+            } catch (error) {
+                console.error(`💥 Failed to nuke ${room.code}:`, error);
+            }
+        }
+        
+        console.log(`💥 NUCLEAR CLEANUP COMPLETE: ${nuked} rooms nuked`);
+        
+    } catch (error) {
+        console.error('💥 NUCLEAR CLEANUP FAILED:', error);
+    }
+}
+
 async function cleanupEmptyRooms() {
     try {
-        console.log('🧹 Cleaning up empty rooms...');
+        console.log('🧹 AGGRESSIVE cleanup of empty rooms...');
         
         // Get all waiting rooms
         const { data: allRooms, error: roomsError } = await supabase
@@ -704,10 +747,12 @@ async function cleanupEmptyRooms() {
             return;
         }
         
-        console.log(`🔍 Checking ${allRooms.length} rooms for cleanup...`);
+        console.log(`🔍 AGGRESSIVELY checking ${allRooms.length} rooms...`);
         
-        // Check which rooms have players and clean up empty ones
+        // AGGRESSIVE: Delete all rooms that don't have active players
         let deletedCount = 0;
+        const roomsToDelete = [];
+        
         for (const room of allRooms) {
             const { data: players } = await supabase
                 .from('players')
@@ -717,33 +762,43 @@ async function cleanupEmptyRooms() {
             const hasActivePlayers = players && players.length > 0;
             
             if (!hasActivePlayers) {
-                console.log(`🗑️ Deleting empty room: ${room.name} (${room.code})`);
-                
-                // Delete the room
-                const { error: deleteError } = await supabase
-                    .from('rooms')
-                    .delete()
-                    .eq('code', room.code);
-                    
-                if (deleteError) {
-                    console.error('❌ Error deleting room:', deleteError);
-                } else {
-                    deletedCount++;
-                    console.log(`✅ Deleted empty room: ${room.code}`);
-                }
+                roomsToDelete.push(room.code);
+                console.log(`🗑️ MARKED for deletion: ${room.name} (${room.code})`);
             } else {
                 console.log(`✅ Room has ${players.length} players: ${room.name} (${room.code})`);
             }
         }
         
-        if (deletedCount > 0) {
-            console.log(`✅ Cleaned up ${deletedCount} empty rooms`);
+        // AGGRESSIVE: Delete all marked rooms at once
+        if (roomsToDelete.length > 0) {
+            console.log(`🔥 AGGRESSIVELY deleting ${roomsToDelete.length} empty rooms...`);
+            
+            for (const roomCode of roomsToDelete) {
+                try {
+                    // Force delete room and all related data
+                    const { error: deleteError } = await supabase
+                        .from('rooms')
+                        .delete()
+                        .eq('code', roomCode);
+                        
+                    if (deleteError) {
+                        console.error(`❌ Error deleting room ${roomCode}:`, deleteError);
+                    } else {
+                        deletedCount++;
+                        console.log(`🔥 FORCE DELETED: ${roomCode}`);
+                    }
+                } catch (error) {
+                    console.error(`❌ Exception deleting room ${roomCode}:`, error);
+                }
+            }
+            
+            console.log(`🔥 AGGRESSIVE cleanup completed: ${deletedCount} rooms deleted`);
         } else {
             console.log('✅ No empty rooms found');
         }
         
     } catch (error) {
-        console.error('❌ Error cleaning up empty rooms:', error);
+        console.error('❌ Error in aggressive cleanup:', error);
     }
 }
 
@@ -765,5 +820,6 @@ window.supabaseClient = {
     stopHeartbeat: stopHeartbeat,
     cleanupInactivePlayers: cleanupInactivePlayers,
     startContinuousCleanup: startContinuousCleanup,
-    stopContinuousCleanup: stopContinuousCleanup
+    stopContinuousCleanup: stopContinuousCleanup,
+    nuclearCleanup: nuclearCleanup
 };
