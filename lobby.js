@@ -108,6 +108,11 @@ async function createLobby() {
     // Update UI
     showLobbyStatus();
     
+    // Start heartbeat for host
+    if (window.supabaseClient) {
+        window.supabaseClient.startHeartbeat();
+    }
+    
     // Hide loading state
     setButtonLoading(createBtn, false);
     
@@ -173,6 +178,11 @@ async function joinLobby() {
         
         // Update UI
         showLobbyStatus();
+        
+        // Start heartbeat for joined player
+        if (window.supabaseClient) {
+            window.supabaseClient.startHeartbeat();
+        }
         
         // Hide loading state
         setButtonLoading(joinBtn, false);
@@ -368,6 +378,9 @@ async function startGame() {
     // Setup game action subscription
     window.supabaseClient.setupGameSubscription();
     
+    // Start heartbeat for this player
+    window.supabaseClient.startHeartbeat();
+    
     // Start spel
     if (lobbyState.room.gameType === 'paardenrace') {
         showRaceGame();
@@ -387,9 +400,14 @@ async function startGame() {
 }
 
 async function leaveLobby() {
-    // Stop polling
-    if (window.supabaseClient && window.supabaseClient.stopPolling) {
-        window.supabaseClient.stopPolling();
+    // Stop polling and heartbeat
+    if (window.supabaseClient) {
+        if (window.supabaseClient.stopPolling) {
+            window.supabaseClient.stopPolling();
+        }
+        if (window.supabaseClient.stopHeartbeat) {
+            window.supabaseClient.stopHeartbeat();
+        }
     }
     
     // Leave room in database if in multiplayer

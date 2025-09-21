@@ -26,8 +26,9 @@ function initializeSupabase() {
         // Test verbinding
         testSupabaseConnection();
         
-        // Clean up empty rooms on startup
+        // Clean up empty rooms and inactive players on startup
         setTimeout(() => {
+            cleanupInactivePlayers();
             cleanupEmptyRooms();
         }, 2000); // Wait 2 seconds after initialization
         
@@ -497,6 +498,9 @@ function setupGameActionSubscription() {
             }
         }
     }, 2000); // Poll every 2 seconds for game actions
+    
+    // Start heartbeat system for active players
+    startHeartbeat();
 }
 
 async function pollGameActions() {
@@ -576,6 +580,83 @@ function updateConnectionIndicator(message, isPolling) {
     }
 }
 
+// Heartbeat system to track active players
+let heartbeatInterval = null;
+
+function startHeartbeat() {
+    // Stop any existing heartbeat
+    stopHeartbeat();
+    
+    if (!gameState.isMultiplayer || !gameState.playerId) return;
+    
+    console.log('💓 Starting heartbeat for player:', gameState.playerId);
+    
+    // Send heartbeat every 30 seconds
+    heartbeatInterval = setInterval(async () => {
+        if (gameState.isMultiplayer && gameState.playerId && gameState.roomCode) {
+            try {
+                await updatePlayerHeartbeat();
+            } catch (error) {
+                console.error('❌ Heartbeat error:', error);
+            }
+        }
+    }, 30000); // Every 30 seconds
+}
+
+function stopHeartbeat() {
+    if (heartbeatInterval) {
+        console.log('💔 Stopping heartbeat');
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+    }
+}
+
+async function updatePlayerHeartbeat() {
+    if (!supabase || !gameState.playerId) return;
+    
+    try {
+        const { error } = await supabase
+            .from('players')
+            .update({ 
+                last_seen: new Date().toISOString()
+            })
+            .eq('id', gameState.playerId);
+            
+        if (error) throw error;
+        
+        console.log('💓 Heartbeat sent for player:', gameState.playerId);
+        
+    } catch (error) {
+        console.error('❌ Error updating heartbeat:', error);
+    }
+}
+
+async function cleanupInactivePlayers() {
+    try {
+        console.log('🧹 Cleaning up inactive players...');
+        
+        // Remove players who haven't been seen for more than 2 minutes
+        const cutoffTime = new Date(Date.now() - 2 * 60 * 1000).toISOString(); // 2 minutes ago
+        
+        const { data: inactivePlayers, error } = await supabase
+            .from('players')
+            .delete()
+            .lt('last_seen', cutoffTime)
+            .select('id, name, room_code');
+            
+        if (error) throw error;
+        
+        if (inactivePlayers && inactivePlayers.length > 0) {
+            console.log(`🗑️ Removed ${inactivePlayers.length} inactive players:`, inactivePlayers.map(p => p.name));
+        } else {
+            console.log('✅ No inactive players found');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error cleaning up inactive players:', error);
+    }
+}
+
 async function cleanupEmptyRooms() {
     try {
         console.log('🧹 Cleaning up empty rooms...');
@@ -650,5 +731,8 @@ window.supabaseClient = {
     setupGameSubscription: setupGameActionSubscription,
     stopPolling: stopPolling,
     refreshLobbyData: refreshLobbyData,
-    cleanupEmptyRooms: cleanupEmptyRooms
+    cleanupEmptyRooms: cleanupEmptyRooms,
+    startHeartbeat: startHeartbeat,
+    stopHeartbeat: stopHeartbeat,
+    cleanupInactivePlayers: cleanupInactivePlayers
 };
