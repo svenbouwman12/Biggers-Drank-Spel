@@ -44,6 +44,8 @@ let raceState = {
     phase: 'betting', // 'betting', 'racing', 'results'
     bettingTimer: 30,
     bettingInterval: null,
+    cardDrawInterval: null, // Automatisch kaart trekken
+    cardDrawDelay: 3000, // 3 seconden tussen kaarten
     playerBets: {}, // {playerId: suit}
     horses: {
         '♠': 0, // Schoppen
@@ -57,7 +59,10 @@ let raceState = {
     drawPile: [], // Trekstapel
     gameOver: false,
     winner: null,
-    currentCard: null
+    currentCard: null,
+    isHost: false, // Of deze client de host is
+    raceSeed: null, // Seed voor consistente random kaarten
+    drawnCards: 0 // Aantal getrokken kaarten
 };
 
 let mexicoState = {
@@ -443,6 +448,8 @@ function resetRaceState() {
     raceState.phase = 'betting';
     raceState.bettingTimer = 30;
     raceState.bettingInterval = null;
+    raceState.cardDrawInterval = null;
+    raceState.cardDrawDelay = 3000;
     raceState.playerBets = {};
     raceState.horses = {
         '♠': 0, '♥': 0, '♦': 0, '♣': 0
@@ -454,6 +461,9 @@ function resetRaceState() {
     raceState.gameOver = false;
     raceState.winner = null;
     raceState.currentCard = null;
+    raceState.isHost = false;
+    raceState.raceSeed = null;
+    raceState.drawnCards = 0;
     
     // Reset UI
     const bettingPhase = document.getElementById('bettingPhase');
@@ -515,8 +525,8 @@ function updateBettingTimer() {
 function placeBet(suit) {
     if (raceState.phase !== 'betting') return;
     
-    // Get current player (for now, use player 1)
-    const playerId = 1;
+    // Get current player ID (use lobby player ID if available)
+    const playerId = currentPlayer ? currentPlayer.id : 1;
     
     // Place bet
     raceState.playerBets[playerId] = suit;
@@ -532,6 +542,11 @@ function placeBet(suit) {
             card.classList.add('selected');
         }
     });
+    
+    // Broadcast betting update if multiplayer
+    if (window.simpleSupabase && raceState.isHost) {
+        broadcastBettingUpdate();
+    }
     
     console.log(`Player ${playerId} bet on ${suit}`);
 }
@@ -575,6 +590,14 @@ function endBettingPhase() {
         }
     });
     
+    // Generate race seed for consistent randomness
+    raceState.raceSeed = Date.now();
+    
+    // Broadcast race start if multiplayer
+    if (window.simpleSupabase && raceState.isHost) {
+        broadcastRaceStart();
+    }
+    
     // Start race phase
     startRacePhase();
 }
@@ -599,6 +622,17 @@ function startRacePhase() {
     
     // Update UI
     updateBetCounts();
+    
+    // Start automatic card drawing (only for host)
+    if (raceState.isHost) {
+        startAutomaticCardDrawing();
+    }
+    
+    // Hide manual draw button for automatic mode
+    const drawButton = document.getElementById('drawCard');
+    if (drawButton) {
+        drawButton.style.display = 'none';
+    }
 }
 
 function createTrackCards() {
@@ -831,6 +865,219 @@ function showRaceResults() {
 function resetRaceGame() {
     resetRaceState();
     startBettingPhase();
+}
+
+// ============================================================================
+// MULTIPLAYER SYNCHRONISATIE
+// ============================================================================
+
+function startAutomaticCardDrawing() {
+    console.log('🎴 Starting automatic card drawing');
+    
+    // Clear any existing interval
+    if (raceState.cardDrawInterval) {
+        clearInterval(raceState.cardDrawInterval);
+    }
+    
+    // Start drawing cards automatically
+    raceState.cardDrawInterval = setInterval(() => {
+        if (raceState.phase === 'racing' && !raceState.gameOver && raceState.drawPile.length > 0) {
+            drawRaceCard();
+            
+            // Broadcast card to other players if multiplayer
+            if (window.simpleSupabase && raceState.isHost) {
+                broadcastRaceCard(raceState.currentCard);
+            }
+        } else {
+            // Stop automatic drawing
+            stopAutomaticCardDrawing();
+        }
+    }, raceState.cardDrawDelay);
+}
+
+function stopAutomaticCardDrawing() {
+    console.log('⏹️ Stopping automatic card drawing');
+    
+    if (raceState.cardDrawInterval) {
+        clearInterval(raceState.cardDrawInterval);
+        raceState.cardDrawInterval = null;
+    }
+}
+
+function broadcastRaceCard(card) {
+    if (!window.simpleSupabase || !raceState.isHost) return;
+    
+    const eventData = {
+        type: 'race_card',
+        card: card,
+        horses: raceState.horses,
+        revealedCards: raceState.revealedCards,
+        gameOver: raceState.gameOver,
+        winner: raceState.winner,
+        timestamp: Date.now()
+    };
+    
+    console.log('📡 Broadcasting race card:', card);
+    
+    window.simpleSupabase.addGameEvent(
+        currentRoom ? currentRoom.code : 'unknown',
+        'race_card',
+        eventData
+    );
+}
+
+function handleRaceCardBroadcast(eventData) {
+    if (!eventData || eventData.type !== 'race_card') return;
+    
+    console.log('📥 Received race card broadcast:', eventData.card);
+    
+    // Update race state from broadcast
+    raceState.currentCard = eventData.card;
+    raceState.horses = eventData.horses;
+    raceState.revealedCards = eventData.revealedCards;
+    raceState.gameOver = eventData.gameOver;
+    raceState.winner = eventData.winner;
+    
+    // Update UI
+    updateRaceUIFromBroadcast();
+}
+
+function updateRaceUIFromBroadcast() {
+    // Update current card display
+    const cardElement = document.getElementById('currentCard');
+    const descriptionElement = document.getElementById('cardDescription');
+    
+    if (cardElement && descriptionElement && raceState.currentCard) {
+        cardElement.textContent = raceState.currentCard.rank + raceState.currentCard.suit;
+        cardElement.className = `card ${raceState.currentCard.suit === '♥' || raceState.currentCard.suit === '♦' ? 'red' : 'black'} revealing`;
+        descriptionElement.textContent = `${raceState.currentCard.rank} ${raceState.currentCard.suit}`;
+    }
+    
+    // Update track cards
+    updateTrackCardsFromBroadcast();
+    
+    // Check for game over
+    if (raceState.gameOver && raceState.winner) {
+        showRaceResults();
+    }
+}
+
+function updateTrackCardsFromBroadcast() {
+    // Update revealed track cards
+    for (let i = 0; i < raceState.revealedCards && i < raceState.trackCards.length; i++) {
+        const trackCard = raceState.trackCards[i];
+        const trackCardElement = document.getElementById(`track-card-${i}`);
+        
+        if (trackCardElement && !trackCardElement.classList.contains('revealed')) {
+            trackCardElement.textContent = trackCard.rank + trackCard.suit;
+            trackCardElement.classList.add('revealed');
+        }
+    }
+}
+
+function broadcastBettingUpdate() {
+    if (!window.simpleSupabase || !raceState.isHost) return;
+    
+    const eventData = {
+        type: 'betting_update',
+        playerBets: raceState.playerBets,
+        bettingTimer: raceState.bettingTimer,
+        timestamp: Date.now()
+    };
+    
+    console.log('📡 Broadcasting betting update');
+    
+    window.simpleSupabase.addGameEvent(
+        currentRoom ? currentRoom.code : 'unknown',
+        'betting_update',
+        eventData
+    );
+}
+
+function handleBettingUpdateBroadcast(eventData) {
+    if (!eventData || eventData.type !== 'betting_update') return;
+    
+    console.log('📥 Received betting update broadcast');
+    
+    // Update betting state
+    raceState.playerBets = eventData.playerBets;
+    raceState.bettingTimer = eventData.bettingTimer;
+    
+    // Update UI
+    updateBetCounts();
+    updateBettingTimer();
+}
+
+function broadcastRaceStart() {
+    if (!window.simpleSupabase || !raceState.isHost) return;
+    
+    const eventData = {
+        type: 'race_start',
+        trackCards: raceState.trackCards,
+        raceSeed: raceState.raceSeed,
+        playerBets: raceState.playerBets,
+        timestamp: Date.now()
+    };
+    
+    console.log('📡 Broadcasting race start');
+    
+    window.simpleSupabase.addGameEvent(
+        currentRoom ? currentRoom.code : 'unknown',
+        'race_start',
+        eventData
+    );
+}
+
+function handleRaceStartBroadcast(eventData) {
+    if (!eventData || eventData.type !== 'race_start') return;
+    
+    console.log('📥 Received race start broadcast');
+    
+    // Update race state
+    raceState.trackCards = eventData.trackCards;
+    raceState.raceSeed = eventData.raceSeed;
+    raceState.playerBets = eventData.playerBets;
+    
+    // Create track cards UI
+    createTrackCardsFromBroadcast();
+    
+    // Start race phase
+    startRacePhase();
+}
+
+function createTrackCardsFromBroadcast() {
+    const trackContainer = document.getElementById('trackCards');
+    if (trackContainer) {
+        trackContainer.innerHTML = '';
+        
+        raceState.trackCards.forEach((card, i) => {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'track-card';
+            cardElement.textContent = '?';
+            cardElement.id = `track-card-${i}`;
+            trackContainer.appendChild(cardElement);
+        });
+    }
+}
+
+// ============================================================================
+// GAME EVENT HANDLING
+// ============================================================================
+
+function handleRaceGameEvent(event) {
+    console.log('🎮 Handling race game event:', event.event_type);
+    
+    switch (event.event_type) {
+        case 'race_card':
+            handleRaceCardBroadcast(event.event_data);
+            break;
+        case 'betting_update':
+            handleBettingUpdateBroadcast(event.event_data);
+            break;
+        case 'race_start':
+            handleRaceStartBroadcast(event.event_data);
+            break;
+    }
 }
 
 // ============================================================================

@@ -194,6 +194,15 @@ function startGameLocally() {
         score: 0
     }));
     
+    // Determine if this player is the host
+    const isHost = currentPlayer && currentPlayer.is_host;
+    
+    // Set host status for race game
+    if (currentRoom.game_type === 'paardenrace') {
+        raceState.isHost = isHost;
+        console.log(`🏇 Race game - Host status: ${isHost}`);
+    }
+    
     // Start the selected game
     if (currentRoom.game_type === 'paardenrace') {
         showRaceGame();
@@ -335,6 +344,14 @@ function handleGameEvent(event) {
         case 'game_start':
             if (!gameState.currentGame) {
                 handleGameStart();
+            }
+            break;
+        case 'race_card':
+        case 'betting_update':
+        case 'race_start':
+            // Handle race-specific game events
+            if (window.handleRaceGameEvent) {
+                window.handleRaceGameEvent(event);
             }
             break;
         // Add more event types as needed
