@@ -643,13 +643,13 @@ function endBettingPhase() {
     // Generate race seed for consistent randomness
     raceState.raceSeed = Date.now();
     
-    // Broadcast race start if multiplayer
+    // Start race phase first (host)
+    startRacePhase();
+    
+    // Then broadcast race start to other players
     if (window.simpleSupabase && raceState.isHost) {
         broadcastRaceStart();
     }
-    
-    // Start race phase
-    startRacePhase();
 }
 
 function startRacePhase() {
@@ -1192,6 +1192,12 @@ function handleRaceStartBroadcast(eventData) {
     if (!eventData || eventData.type !== 'race_start') return;
     
     console.log('📥 Received race start broadcast');
+    
+    // Don't process if we're already in racing phase (prevents duplicate execution)
+    if (raceState.phase === 'racing') {
+        console.log('📥 Already in racing phase, skipping race start broadcast');
+        return;
+    }
     
     // Update race state
     raceState.trackCards = eventData.trackCards;
