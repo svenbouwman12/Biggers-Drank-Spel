@@ -197,7 +197,7 @@ function startGameLocally() {
     // Start the selected game
     if (currentRoom.game_type === 'paardenrace') {
         showRaceGame();
-        setupRaceTrack();
+        // setupRaceTrack() is no longer needed - showRaceGame() handles everything
     } else if (currentRoom.game_type === 'mexico') {
         showMexicoGame();
     } else if (currentRoom.game_type === 'bussen') {
