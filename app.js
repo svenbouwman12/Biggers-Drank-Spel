@@ -41,9 +41,23 @@ let lobbyState = {
 
 // Spel specifieke variabelen
 let raceState = {
-    horses: [0, 0, 0, 0, 0, 0], // Positie van elke paard (0-20)
+    phase: 'betting', // 'betting', 'racing', 'results'
+    bettingTimer: 30,
+    bettingInterval: null,
+    playerBets: {}, // {playerId: suit}
+    horses: {
+        '♠': 0, // Schoppen
+        '♥': 0, // Harten  
+        '♦': 0, // Ruiten
+        '♣': 0  // Klaveren
+    },
+    trackLength: 8, // Aantal kaarten op de baan
+    trackCards: [], // Kaarten op de baan
+    revealedCards: 0, // Aantal omgedraaide kaarten
+    drawPile: [], // Trekstapel
     gameOver: false,
-    winner: null
+    winner: null,
+    currentCard: null
 };
 
 let mexicoState = {
@@ -406,7 +420,8 @@ function startGame(gameType) {
 
 function showRaceGame() {
     showScreen('paardenraceGame');
-    setupRaceTrack();
+    resetRaceState();
+    startBettingPhase();
 }
 
 function showMexicoGame() {
@@ -425,105 +440,397 @@ function showBussenGame() {
 // ============================================================================
 
 function resetRaceState() {
-    raceState.horses = [0, 0, 0, 0, 0, 0];
+    raceState.phase = 'betting';
+    raceState.bettingTimer = 30;
+    raceState.bettingInterval = null;
+    raceState.playerBets = {};
+    raceState.horses = {
+        '♠': 0, '♥': 0, '♦': 0, '♣': 0
+    };
+    raceState.trackLength = 8;
+    raceState.trackCards = [];
+    raceState.revealedCards = 0;
+    raceState.drawPile = [];
     raceState.gameOver = false;
     raceState.winner = null;
+    raceState.currentCard = null;
+    
+    // Reset UI
+    const bettingPhase = document.getElementById('bettingPhase');
+    const racePhase = document.getElementById('racePhase');
+    const resultsPhase = document.getElementById('resultsPhase');
+    
+    if (bettingPhase) bettingPhase.style.display = 'block';
+    if (racePhase) racePhase.style.display = 'none';
+    if (resultsPhase) resultsPhase.style.display = 'none';
 }
 
-function setupRaceTrack() {
-    const container = document.getElementById('horses');
-    container.innerHTML = '';
+// ============================================================================
+// NIEUWE PAARDENRACE SPEL (Originele Regels)
+// ============================================================================
+
+function startBettingPhase() {
+    console.log('💰 Starting betting phase');
     
-    // Maak 6 paarden
-    for (let i = 0; i < 6; i++) {
-        const horse = document.createElement('div');
-        horse.className = 'horse';
-        horse.innerHTML = '🐎';
-        horse.style.top = `${30 + i * 60}px`;
-        horse.id = `horse-${i + 1}`;
-        container.appendChild(horse);
+    // Reset bet counters
+    ['♠', '♥', '♦', '♣'].forEach(suit => {
+        const elementId = `bet-${suit === '♠' ? 'spades' : 
+                               suit === '♥' ? 'hearts' :
+                               suit === '♦' ? 'diamonds' : 'clubs'}`;
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = '0';
+        }
+    });
+    
+    // Start betting timer
+    raceState.bettingTimer = 30;
+    updateBettingTimer();
+    raceState.bettingInterval = setInterval(() => {
+        raceState.bettingTimer--;
+        updateBettingTimer();
+        
+        if (raceState.bettingTimer <= 0) {
+            endBettingPhase();
+        }
+    }, 1000);
+}
+
+function updateBettingTimer() {
+    const timerElement = document.getElementById('bettingTimer');
+    if (timerElement) {
+        timerElement.textContent = raceState.bettingTimer;
+        
+        // Change color when time is running out
+        if (raceState.bettingTimer <= 10) {
+            timerElement.style.background = '#e74c3c';
+        } else if (raceState.bettingTimer <= 20) {
+            timerElement.style.background = '#f39c12';
+        } else {
+            timerElement.style.background = '#ff6b6b';
+        }
+    }
+}
+
+function placeBet(suit) {
+    if (raceState.phase !== 'betting') return;
+    
+    // Get current player (for now, use player 1)
+    const playerId = 1;
+    
+    // Place bet
+    raceState.playerBets[playerId] = suit;
+    
+    // Update UI
+    updateBetCounts();
+    
+    // Visual feedback
+    const horseCards = document.querySelectorAll('.horse-card');
+    horseCards.forEach(card => {
+        card.classList.remove('selected');
+        if (card.querySelector('.horse-symbol').textContent === suit) {
+            card.classList.add('selected');
+        }
+    });
+    
+    console.log(`Player ${playerId} bet on ${suit}`);
+}
+
+function updateBetCounts() {
+    const betCounts = { '♠': 0, '♥': 0, '♦': 0, '♣': 0 };
+    
+    // Count bets
+    Object.values(raceState.playerBets).forEach(suit => {
+        betCounts[suit]++;
+    });
+    
+    // Update UI
+    Object.keys(betCounts).forEach(suit => {
+        const elementId = `bet-${suit === '♠' ? 'spades' : 
+                               suit === '♥' ? 'hearts' :
+                               suit === '♦' ? 'diamonds' : 'clubs'}`;
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = betCounts[suit];
+        }
+    });
+}
+
+function endBettingPhase() {
+    console.log('⏰ Betting phase ended');
+    
+    // Stop timer
+    if (raceState.bettingInterval) {
+        clearInterval(raceState.bettingInterval);
+        raceState.bettingInterval = null;
     }
     
-    // Reset resultaten
-    document.getElementById('raceResults').innerHTML = '';
-    document.getElementById('diceResult').innerHTML = '';
-    document.getElementById('rollDice').disabled = false;
+    // Assign random bets to players who didn't bet
+    gameState.players.forEach(player => {
+        if (!raceState.playerBets[player.id]) {
+            const suits = ['♠', '♥', '♦', '♣'];
+            const randomSuit = suits[Math.floor(Math.random() * suits.length)];
+            raceState.playerBets[player.id] = randomSuit;
+            console.log(`Random bet assigned: Player ${player.id} -> ${randomSuit}`);
+        }
+    });
+    
+    // Start race phase
+    startRacePhase();
 }
 
-function rollDiceForRace() {
-    if (raceState.gameOver) return;
+function startRacePhase() {
+    console.log('🏇 Starting race phase');
     
-    const dice = Math.floor(Math.random() * 6) + 1;
-    const diceElement = document.getElementById('diceResult');
+    raceState.phase = 'racing';
     
-    // Toon dobbelsteen animatie
-    diceElement.innerHTML = `🎲 ${dice}`;
+    // Hide betting phase, show race phase
+    const bettingPhase = document.getElementById('bettingPhase');
+    const racePhase = document.getElementById('racePhase');
     
-    // Beweeg paard
-    moveHorse(dice - 1);
+    if (bettingPhase) bettingPhase.style.display = 'none';
+    if (racePhase) racePhase.style.display = 'block';
     
-    // Check winnaar
+    // Create track cards
+    createTrackCards();
+    
+    // Create draw pile (remaining cards after removing track cards and aces)
+    createDrawPile();
+    
+    // Update UI
+    updateBetCounts();
+}
+
+function createTrackCards() {
+    const suits = ['♠', '♥', '♦', '♣'];
+    const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    
+    raceState.trackCards = [];
+    const trackContainer = document.getElementById('trackCards');
+    if (trackContainer) {
+        trackContainer.innerHTML = '';
+        
+        for (let i = 0; i < raceState.trackLength; i++) {
+            const suit = suits[Math.floor(Math.random() * suits.length)];
+            const rank = ranks[Math.floor(Math.random() * ranks.length)];
+            
+            const card = {
+                suit: suit,
+                rank: rank,
+                revealed: false
+            };
+            
+            raceState.trackCards.push(card);
+            
+            // Create UI element
+            const cardElement = document.createElement('div');
+            cardElement.className = 'track-card';
+            cardElement.textContent = '?';
+            cardElement.id = `track-card-${i}`;
+            trackContainer.appendChild(cardElement);
+        }
+    }
+}
+
+function createDrawPile() {
+    const suits = ['♠', '♥', '♦', '♣'];
+    const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    
+    raceState.drawPile = [];
+    
+    // Add all cards except aces and track cards
+    suits.forEach(suit => {
+        ranks.forEach(rank => {
+            // Skip if this card is already on the track
+            const isOnTrack = raceState.trackCards.some(card => 
+                card.suit === suit && card.rank === rank);
+            
+            if (!isOnTrack) {
+                raceState.drawPile.push({ suit: suit, rank: rank });
+            }
+        });
+    });
+    
+    // Shuffle draw pile
+    for (let i = raceState.drawPile.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [raceState.drawPile[i], raceState.drawPile[j]] = [raceState.drawPile[j], raceState.drawPile[i]];
+    }
+    
+    console.log(`Created draw pile with ${raceState.drawPile.length} cards`);
+}
+
+function drawRaceCard() {
+    if (raceState.phase !== 'racing' || raceState.gameOver) return;
+    
+    if (raceState.drawPile.length === 0) {
+        console.log('No more cards to draw');
+        return;
+    }
+    
+    // Draw card
+    raceState.currentCard = raceState.drawPile.pop();
+    
+    // Show card
+    const cardElement = document.getElementById('currentCard');
+    const descriptionElement = document.getElementById('cardDescription');
+    
+    if (cardElement && descriptionElement) {
+        cardElement.textContent = raceState.currentCard.rank + raceState.currentCard.suit;
+        cardElement.className = `card ${raceState.currentCard.suit === '♥' || raceState.currentCard.suit === '♦' ? 'red' : 'black'} revealing`;
+        descriptionElement.textContent = `${raceState.currentCard.rank} ${raceState.currentCard.suit}`;
+    }
+    
+    // Move horse forward
+    moveHorse(raceState.currentCard.suit, 'forward');
+    
+    // Check if we need to reveal track cards
+    checkTrackCardReveal();
+    
+    // Check for winner
     checkRaceWinner();
     
-    // Speel geluid als ingeschakeld
+    // Play sound
     if (gameState.settings.soundEnabled) {
-        playSound('dice');
+        playSound('card');
     }
+    
+    console.log(`Drew card: ${raceState.currentCard.rank} ${raceState.currentCard.suit}`);
 }
 
-function moveHorse(horseIndex) {
-    if (raceState.horses[horseIndex] < 20) {
-        raceState.horses[horseIndex]++;
+function moveHorse(suit, direction) {
+    if (direction === 'forward') {
+        raceState.horses[suit]++;
+    } else if (direction === 'backward') {
+        raceState.horses[suit] = Math.max(0, raceState.horses[suit] - 1);
+    }
+    
+    // Animate horse
+    const horseElement = document.getElementById(`horse-${suit === '♠' ? 'spades' : 
+                                                       suit === '♥' ? 'hearts' :
+                                                       suit === '♦' ? 'diamonds' : 'clubs'}`);
+    
+    if (horseElement) {
+        horseElement.classList.remove('moving', 'backwards');
         
-        const horseElement = document.getElementById(`horse-${horseIndex + 1}`);
-        const newPosition = 20 + (raceState.horses[horseIndex] * 30); // 20px start + 30px per stap
-        horseElement.style.left = `${newPosition}px`;
+        // Add appropriate animation class
+        if (direction === 'forward') {
+            horseElement.classList.add('moving');
+        } else if (direction === 'backward') {
+            horseElement.classList.add('backwards');
+        }
         
-        // Animatie effect
-        horseElement.style.transform = 'scale(1.2)';
+        // Remove animation class after animation completes
         setTimeout(() => {
-            horseElement.style.transform = 'scale(1)';
-        }, 200);
+            horseElement.classList.remove('moving', 'backwards');
+        }, 800);
+    }
+    
+    console.log(`Horse ${suit} moved ${direction} to position ${raceState.horses[suit]}`);
+}
+
+function checkTrackCardReveal() {
+    // Check if all horses have passed the current track position
+    const minPosition = Math.min(...Object.values(raceState.horses));
+    
+    if (minPosition > raceState.revealedCards && raceState.revealedCards < raceState.trackLength) {
+        // Reveal next track card
+        const trackCard = raceState.trackCards[raceState.revealedCards];
+        const trackCardElement = document.getElementById(`track-card-${raceState.revealedCards}`);
+        
+        if (trackCardElement) {
+            trackCardElement.textContent = trackCard.rank + trackCard.suit;
+            trackCardElement.classList.add('revealed');
+            trackCard.revealed = true;
+            
+            // Move corresponding horse backward
+            moveHorse(trackCard.suit, 'backward');
+            
+            console.log(`Revealed track card: ${trackCard.rank} ${trackCard.suit} - ${trackCard.suit} horse moves back`);
+        }
+        
+        raceState.revealedCards++;
     }
 }
 
 function checkRaceWinner() {
-    for (let i = 0; i < raceState.horses.length; i++) {
-        if (raceState.horses[i] >= 20) {
-            raceState.gameOver = true;
-            raceState.winner = i + 1;
-            
-            // Toon resultaten
-            showRaceResults();
-            
-            // Update scores (voorbeeld - winnaar deelt uit, verliezers drinken)
-            addScore(1, -2); // Winnaar deelt uit (negatieve score = uitdelen)
-            
-            // Confetti effect
-            createConfetti();
-            
-            // Disable dobbelsteen knop
-            document.getElementById('rollDice').disabled = true;
-            
-            break;
+    // Check if any horse has reached the finish line
+    const maxPosition = Math.max(...Object.values(raceState.horses));
+    
+    if (maxPosition >= raceState.trackLength) {
+        raceState.gameOver = true;
+        
+        // Find winner
+        Object.keys(raceState.horses).forEach(suit => {
+            if (raceState.horses[suit] >= raceState.trackLength) {
+                raceState.winner = suit;
+            }
+        });
+        
+        console.log(`Race finished! Winner: ${raceState.winner}`);
+        
+        // Show results
+        showRaceResults();
+        
+        // Disable draw button
+        const drawButton = document.getElementById('drawCard');
+        if (drawButton) {
+            drawButton.disabled = true;
         }
     }
 }
 
 function showRaceResults() {
+    raceState.phase = 'results';
+    
+    // Hide race phase, show results phase
+    const racePhase = document.getElementById('racePhase');
+    const resultsPhase = document.getElementById('resultsPhase');
+    
+    if (racePhase) racePhase.style.display = 'none';
+    if (resultsPhase) resultsPhase.style.display = 'block';
+    
+    // Calculate winners and losers
+    const winners = [];
+    const losers = [];
+    
+    gameState.players.forEach(player => {
+        if (raceState.playerBets[player.id] === raceState.winner) {
+            winners.push(player);
+        } else {
+            losers.push(player);
+        }
+    });
+    
+    // Update scores
+    winners.forEach(player => {
+        addScore(player.id, -1); // Winner distributes drinks (negative score)
+    });
+    
+    losers.forEach(player => {
+        addScore(player.id, 2); // Losers drink
+    });
+    
+    // Show results
     const resultsDiv = document.getElementById('raceResults');
-    resultsDiv.innerHTML = `
-        <h3>🏁 Race voorbij!</h3>
-        <p><strong>Paard ${raceState.winner} heeft gewonnen! 🎉</strong></p>
-        <p>Winnaar mag 1 ${gameState.settings.drinkUnit} uitdelen</p>
-        <p>Andere spelers drinken 2 ${gameState.settings.drinkUnit}</p>
-        <button class="btn btn-primary" onclick="resetRaceGame()">Nieuwe race</button>
-    `;
+    if (resultsDiv) {
+        resultsDiv.innerHTML = `
+            <h3 class="winner-celebration">🏁 Race voorbij!</h3>
+            <p><strong>${raceState.winner} heeft gewonnen! 🎉</strong></p>
+            <p><strong>Winnaars:</strong> ${winners.map(p => p.name).join(', ')}</p>
+            <p>Winnaars mogen 1 ${gameState.settings.drinkUnit} uitdelen</p>
+            <p><strong>Verliezers:</strong> ${losers.map(p => p.name).join(', ')}</p>
+            <p>Verliezers drinken 2 ${gameState.settings.drinkUnit}</p>
+        `;
+    }
+    
+    // Confetti effect
+    createConfetti();
 }
 
 function resetRaceGame() {
     resetRaceState();
-    setupRaceTrack();
+    startBettingPhase();
 }
 
 // ============================================================================

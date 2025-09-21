@@ -342,19 +342,69 @@
                 <h2>🏇 Paardenrace</h2>
                 <button class="btn btn-back" onclick="showGameSelection()">← Terug</button>
                 
-                <div class="race-track">
-                    <div class="finish-line"></div>
-                    <div id="horses" class="horses-container"></div>
+                <!-- Inzetfase -->
+                <div id="bettingPhase" class="game-phase">
+                    <h3>💰 Plaats je inzet!</h3>
+                    <div class="betting-timer">
+                        <div id="bettingTimer" class="timer">30</div>
+                        <span>seconden resterend</span>
+                    </div>
+                    
+                    <div class="horses-betting">
+                        <div class="horse-card" onclick="placeBet('♠')">
+                            <div class="horse-symbol">♠</div>
+                            <div class="horse-name">Schoppen</div>
+                            <div class="bet-count" id="bet-spades">0</div>
+                        </div>
+                        <div class="horse-card" onclick="placeBet('♥')">
+                            <div class="horse-symbol">♥</div>
+                            <div class="horse-name">Harten</div>
+                            <div class="bet-count" id="bet-hearts">0</div>
+                        </div>
+                        <div class="horse-card" onclick="placeBet('♦')">
+                            <div class="horse-symbol">♦</div>
+                            <div class="horse-name">Ruiten</div>
+                            <div class="bet-count" id="bet-diamonds">0</div>
+                        </div>
+                        <div class="horse-card" onclick="placeBet('♣')">
+                            <div class="horse-symbol">♣</div>
+                            <div class="horse-name">Klaveren</div>
+                            <div class="bet-count" id="bet-clubs">0</div>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="game-controls">
-                    <button id="rollDice" class="btn btn-primary" onclick="rollDiceForRace()">
-                        🎲 Gooi dobbelsteen
-                    </button>
-                    <div id="diceResult" class="dice-result"></div>
+                <!-- Racefase -->
+                <div id="racePhase" class="game-phase" style="display: none;">
+                    <div class="race-track">
+                        <div class="track-start">
+                            <div class="horse-ace" id="horse-spades">♠</div>
+                            <div class="horse-ace" id="horse-hearts">♥</div>
+                            <div class="horse-ace" id="horse-diamonds">♦</div>
+                            <div class="horse-ace" id="horse-clubs">♣</div>
+                        </div>
+                        
+                        <div class="track-cards" id="trackCards">
+                            <!-- Kaarten worden hier dynamisch toegevoegd -->
+                        </div>
+                        
+                        <div class="track-finish">🏁</div>
+                    </div>
+                    
+                    <div class="race-controls">
+                        <div class="current-card">
+                            <div id="currentCard" class="card">?</div>
+                            <div id="cardDescription"></div>
+                        </div>
+                        <button class="btn btn-primary" id="drawCard" onclick="drawRaceCard()">Trek Kaart</button>
+                    </div>
                 </div>
                 
-                <div id="raceResults" class="game-results"></div>
+                <!-- Uitslagfase -->
+                <div id="resultsPhase" class="game-phase" style="display: none;">
+                    <div id="raceResults" class="race-results"></div>
+                    <button class="btn btn-primary" onclick="resetRaceGame()">Nieuwe Race</button>
+                </div>
             </div>
         </div>
 
