@@ -32,6 +32,9 @@ function initializeSupabase() {
             cleanupEmptyRooms();
         }, 2000); // Wait 2 seconds after initialization
         
+        // Start continuous cleanup every 10 seconds
+        startContinuousCleanup();
+        
         // Setup polling (instead of real-time)
         setupRealtimeSubscriptions();
         
@@ -582,6 +585,7 @@ function updateConnectionIndicator(message, isPolling) {
 
 // Heartbeat system to track active players
 let heartbeatInterval = null;
+let continuousCleanupInterval = null;
 
 function startHeartbeat() {
     // Stop any existing heartbeat
@@ -591,7 +595,7 @@ function startHeartbeat() {
     
     console.log('💓 Starting heartbeat for player:', gameState.playerId);
     
-    // Send heartbeat every 30 seconds
+    // Send heartbeat every 5 seconds for faster detection
     heartbeatInterval = setInterval(async () => {
         if (gameState.isMultiplayer && gameState.playerId && gameState.roomCode) {
             try {
@@ -600,7 +604,7 @@ function startHeartbeat() {
                 console.error('❌ Heartbeat error:', error);
             }
         }
-    }, 30000); // Every 30 seconds
+    }, 5000); // Every 5 seconds
 }
 
 function stopHeartbeat() {
@@ -608,6 +612,31 @@ function stopHeartbeat() {
         console.log('💔 Stopping heartbeat');
         clearInterval(heartbeatInterval);
         heartbeatInterval = null;
+    }
+}
+
+function startContinuousCleanup() {
+    // Stop any existing cleanup
+    stopContinuousCleanup();
+    
+    console.log('🧹 Starting continuous cleanup (every 10 seconds)');
+    
+    // Run cleanup every 10 seconds
+    continuousCleanupInterval = setInterval(async () => {
+        try {
+            await cleanupInactivePlayers();
+            await cleanupEmptyRooms();
+        } catch (error) {
+            console.error('❌ Continuous cleanup error:', error);
+        }
+    }, 10000); // Every 10 seconds
+}
+
+function stopContinuousCleanup() {
+    if (continuousCleanupInterval) {
+        console.log('⏹️ Stopping continuous cleanup');
+        clearInterval(continuousCleanupInterval);
+        continuousCleanupInterval = null;
     }
 }
 
@@ -635,8 +664,8 @@ async function cleanupInactivePlayers() {
     try {
         console.log('🧹 Cleaning up inactive players...');
         
-        // Remove players who haven't been seen for more than 2 minutes
-        const cutoffTime = new Date(Date.now() - 2 * 60 * 1000).toISOString(); // 2 minutes ago
+        // Remove players who haven't been seen for more than 10 seconds
+        const cutoffTime = new Date(Date.now() - 10 * 1000).toISOString(); // 10 seconds ago
         
         const { data: inactivePlayers, error } = await supabase
             .from('players')
@@ -734,5 +763,7 @@ window.supabaseClient = {
     cleanupEmptyRooms: cleanupEmptyRooms,
     startHeartbeat: startHeartbeat,
     stopHeartbeat: stopHeartbeat,
-    cleanupInactivePlayers: cleanupInactivePlayers
+    cleanupInactivePlayers: cleanupInactivePlayers,
+    startContinuousCleanup: startContinuousCleanup,
+    stopContinuousCleanup: stopContinuousCleanup
 };
