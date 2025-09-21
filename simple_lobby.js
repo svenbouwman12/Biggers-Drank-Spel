@@ -376,9 +376,15 @@ function stopHeartbeat() {
 // ============================================================================
 
 function showLobbyScreen() {
-    document.getElementById('startScreen').style.display = 'none';
-    document.getElementById('gameScreen').style.display = 'none';
-    document.getElementById('lobbyScreen').style.display = 'block';
+    // Hide all screens
+    const screens = document.querySelectorAll('.screen');
+    screens.forEach(screen => screen.classList.remove('active'));
+    
+    // Show lobby screen
+    const lobbyScreen = document.getElementById('lobbyScreen');
+    if (lobbyScreen) {
+        lobbyScreen.classList.add('active');
+    }
     
     // Show lobby status if in a room
     if (currentRoom) {
@@ -389,13 +395,28 @@ function showLobbyScreen() {
 }
 
 function showLobbyTabs() {
-    document.getElementById('lobbyStatus').style.display = 'none';
-    document.getElementById('lobbyTabs').style.display = 'block';
+    const lobbyStatus = document.getElementById('lobbyStatus');
+    const lobbyTabs = document.getElementById('lobbyTabs');
+    
+    if (lobbyStatus) {
+        lobbyStatus.style.display = 'none';
+    }
+    if (lobbyTabs) {
+        lobbyTabs.style.display = 'block';
+    }
 }
 
 function showLobbyStatus() {
-    document.getElementById('lobbyTabs').style.display = 'none';
-    document.getElementById('lobbyStatus').style.display = 'block';
+    const lobbyTabs = document.getElementById('lobbyTabs');
+    const lobbyStatus = document.getElementById('lobbyStatus');
+    
+    if (lobbyTabs) {
+        lobbyTabs.style.display = 'none';
+    }
+    if (lobbyStatus) {
+        lobbyStatus.style.display = 'block';
+    }
+    
     updateLobbyUI();
 }
 
@@ -459,9 +480,15 @@ function showLobbyTab(tabName, clickedButton = null) {
 }
 
 function showStartScreen() {
-    document.getElementById('lobbyScreen').style.display = 'none';
-    document.getElementById('gameScreen').style.display = 'none';
-    document.getElementById('startScreen').style.display = 'block';
+    // Hide all screens
+    const screens = document.querySelectorAll('.screen');
+    screens.forEach(screen => screen.classList.remove('active'));
+    
+    // Show start screen
+    const startScreen = document.getElementById('startScreen');
+    if (startScreen) {
+        startScreen.classList.add('active');
+    }
     
     // Stop any active polling/heartbeat
     stopPolling();
