@@ -21,12 +21,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/drankspel-party.git"
+    "url": "https://github.com/svenbouwman12/Biggers-Drank-Spel.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/drankspel-party/issues"
+    "url": "https://github.com/svenbouwman12/Biggers-Drank-Spel/issues"
   },
-  "homepage": "https://your-username.github.io/drankspel-party",
+  "homepage": "https://svenbouwman12.github.io/Biggers-Drank-Spel",
   "devDependencies": {
     "live-server": "^1.2.2",
     "serve": "^14.2.1"

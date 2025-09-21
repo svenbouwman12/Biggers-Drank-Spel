@@ -1,6 +1,6 @@
 # 🎉 Drankspel Party 🍻
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-🎮%20Play%20Now-green?style=for-the-badge)](https://your-username.github.io/drankspel-party)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-🎮%20Play%20Now-green?style=for-the-badge)](https://svenbouwman12.github.io/Biggers-Drank-Spel)
 [![Supabase](https://img.shields.io/badge/Supabase-Realtime%20Database-orange?style=for-the-badge&logo=supabase)](https://supabase.com)
 [![Vanilla JS](https://img.shields.io/badge/JavaScript-Vanilla%20ES6+-yellow?style=for-the-badge&logo=javascript)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
