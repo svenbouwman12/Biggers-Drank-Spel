@@ -272,14 +272,18 @@ function startPolling() {
     gameState.pollingInterval = setInterval(async () => {
         if (gameState.isMultiplayer && gameState.roomCode) {
             try {
+                console.log('🔄 Polling for updates...');
+                updateConnectionIndicator('🔄 Polling...', true);
                 await refreshLobbyData();
+                updateConnectionIndicator('✅ Verbonden', false);
             } catch (error) {
                 console.error('Polling error:', error);
+                updateConnectionIndicator('❌ Verbindingsfout', false);
             }
         }
-    }, 3000); // Poll every 3 seconds
+    }, 2000); // Poll every 2 seconds (faster for better sync)
     
-    console.log('✅ Polling started for real-time updates');
+    console.log('✅ Polling started for real-time updates (every 2 seconds)');
 }
 
 function stopPolling() {
@@ -487,6 +491,18 @@ function generatePlayerId() {
     return 'player_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
 }
 
+function updateConnectionIndicator(message, isPolling) {
+    const indicator = document.getElementById('connectionStatus');
+    if (indicator) {
+        indicator.textContent = message;
+        if (isPolling) {
+            indicator.classList.add('polling');
+        } else {
+            indicator.classList.remove('polling');
+        }
+    }
+}
+
 // Export voor gebruik in andere bestanden
 window.supabaseClient = {
     initialize: initializeSupabase,
@@ -498,5 +514,6 @@ window.supabaseClient = {
     leaveRoom: leaveRoomFromDatabase,
     broadcastAction: broadcastGameAction,
     setupGameSubscription: setupGameActionSubscription,
-    stopPolling: stopPolling
+    stopPolling: stopPolling,
+    refreshLobbyData: refreshLobbyData
 };

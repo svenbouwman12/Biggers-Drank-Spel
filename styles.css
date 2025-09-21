@@ -302,6 +302,21 @@ h3 {
     flex-wrap: wrap;
 }
 
+.connection-indicator {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin: 10px 0;
+}
+
+.connection-indicator.polling {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
 /* Connection status */
 .connection-status {
     position: fixed;

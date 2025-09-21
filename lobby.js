@@ -221,6 +221,28 @@ function joinRoomByCode(roomCode) {
     joinLobby();
 }
 
+// Force refresh lobby data (called by refresh button)
+async function refreshLobbyData() {
+    if (!gameState.isMultiplayer || !gameState.roomCode) {
+        showNotification('Geen actieve lobby om te verversen', 'warning');
+        return;
+    }
+    
+    console.log('🔄 Manual lobby refresh triggered');
+    
+    if (window.supabaseClient && supabase) {
+        try {
+            await window.supabaseClient.refreshLobbyData();
+            showNotification('Lobby data ververst!', 'success');
+        } catch (error) {
+            console.error('Manual refresh error:', error);
+            showNotification('Fout bij verversen lobby', 'error');
+        }
+    } else {
+        showNotification('Supabase niet beschikbaar voor refresh', 'warning');
+    }
+}
+
 function generateRoomCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
