@@ -1,6 +1,19 @@
 # 🎉 Drankspel Party 🍻
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-🎮%20Play%20Now-green?style=for-the-badge)](https://your-username.github.io/drankspel-party)
+[![Supabase](https://img.shields.io/badge/Supabase-Realtime%20Database-orange?style=for-the-badge&logo=supabase)](https://supabase.com)
+[![Vanilla JS](https://img.shields.io/badge/JavaScript-Vanilla%20ES6+-yellow?style=for-the-badge&logo=javascript)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+
 Een volledig werkende single-page webapp voor drie populaire drankspelen! Perfect voor feestjes en gezellige avonden. **Nu met multiplayer lobby systeem!**
+
+## ✨ Features
+
+- 🏠 **Multiplayer Lobby System** - Speel samen online
+- 🎮 **Drie Drankspelen** - Paardenrace, Mexico, en Bussen
+- ⚡ **Real-time Updates** - Via Supabase polling
+- 📱 **Responsive Design** - Werkt op alle apparaten
+- 💾 **Local Storage** - Instellingen blijven bewaard
+- 🔒 **Veilig & Verantwoordelijk** - Volwassenen 18+
 
 ## 🚀 Hoe openen
 
