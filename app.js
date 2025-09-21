@@ -489,28 +489,48 @@ function resetRaceState() {
 function startBettingPhase() {
     console.log('💰 Starting betting phase');
     
-    // Reset bet counters
+    // Reset bet counters and player lists
     ['♠', '♥', '♦', '♣'].forEach(suit => {
-        const elementId = `bet-${suit === '♠' ? 'spades' : 
-                               suit === '♥' ? 'hearts' :
-                               suit === '♦' ? 'diamonds' : 'clubs'}`;
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.textContent = '0';
+        const suitName = suit === '♠' ? 'spades' : 
+                        suit === '♥' ? 'hearts' :
+                        suit === '♦' ? 'diamonds' : 'clubs';
+        
+        // Reset count
+        const countElement = document.getElementById(`bet-${suitName}`);
+        if (countElement) {
+            countElement.textContent = '0';
+        }
+        
+        // Reset player names
+        const playersElement = document.getElementById(`bet-players-${suitName}`);
+        if (playersElement) {
+            playersElement.textContent = '';
         }
     });
     
     // Start betting timer
     raceState.bettingTimer = 30;
     updateBettingTimer();
-    raceState.bettingInterval = setInterval(() => {
-        raceState.bettingTimer--;
-        updateBettingTimer();
-        
-        if (raceState.bettingTimer <= 0) {
-            endBettingPhase();
-        }
-    }, 1000);
+    
+    // Only host starts the timer interval
+    if (raceState.isHost) {
+        console.log('⏰ Host starting betting timer');
+        raceState.bettingInterval = setInterval(() => {
+            raceState.bettingTimer--;
+            updateBettingTimer();
+            
+            // Broadcast timer updates to other players
+            if (window.simpleSupabase && gameState.isMultiplayer) {
+                broadcastBettingUpdate();
+            }
+            
+            if (raceState.bettingTimer <= 0) {
+                endBettingPhase();
+            }
+        }, 1000);
+    } else {
+        console.log('⏰ Non-host waiting for timer updates from host');
+    }
 }
 
 function updateBettingTimer() {
@@ -550,8 +570,8 @@ function placeBet(suit) {
         }
     });
     
-    // Broadcast betting update if multiplayer
-    if (window.simpleSupabase && raceState.isHost) {
+    // Broadcast betting update if multiplayer (all players, not just host)
+    if (window.simpleSupabase && gameState.isMultiplayer) {
         broadcastBettingUpdate();
     }
     
@@ -1135,13 +1155,17 @@ function handleBettingUpdateBroadcast(eventData) {
     console.log('📥 Received betting update broadcast');
     console.log('📥 Timer:', eventData.bettingTimer, 'Bets:', eventData.playerBets);
     
-    // Update betting state
+    // Only update timer if we're not the host (host controls the timer)
+    if (!raceState.isHost) {
+        raceState.bettingTimer = eventData.bettingTimer;
+        updateBettingTimer();
+    }
+    
+    // Always update betting state
     raceState.playerBets = { ...eventData.playerBets };
-    raceState.bettingTimer = eventData.bettingTimer;
     
     // Update UI
     updateBetCounts();
-    updateBettingTimer();
 }
 
 function broadcastRaceStart() {
@@ -1172,7 +1196,7 @@ function handleRaceStartBroadcast(eventData) {
     // Update race state
     raceState.trackCards = eventData.trackCards;
     raceState.raceSeed = eventData.raceSeed;
-    raceState.playerBets = eventData.playerBets;
+    raceState.playerBets = { ...eventData.playerBets };
     
     // Create track cards UI
     createTrackCardsFromBroadcast();
