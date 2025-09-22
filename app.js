@@ -476,6 +476,9 @@ function startRacePhase() {
     // Create track cards
     createTrackCards();
     
+    // Position aces in main grid
+    positionAcesInGrid();
+    
     // Create draw pile
     createDrawPile();
     
@@ -498,6 +501,26 @@ function startRacePhase() {
     }
 }
 
+function positionAcesInGrid() {
+    console.log('🏇 Positioning aces in main grid');
+    
+    const aces = [
+        { id: 'horse-spades', suit: '♠', row: 2 },
+        { id: 'horse-hearts', suit: '♥', row: 3 },
+        { id: 'horse-diamonds', suit: '♦', row: 4 },
+        { id: 'horse-clubs', suit: '♣', row: 5 }
+    ];
+    
+    aces.forEach(ace => {
+        const aceElement = document.getElementById(ace.id);
+        if (aceElement) {
+            aceElement.style.gridColumn = 1; // Start at column 1
+            aceElement.style.gridRow = ace.row; // Each ace in its own row
+            console.log(`🏇 Positioned ${ace.suit} at row ${ace.row}, column 1`);
+        }
+    });
+}
+
 function createTrackCards() {
     console.log('🎴 Creating track cards');
     const trackCardsContainer = document.getElementById('trackCards');
@@ -511,6 +534,9 @@ function createTrackCards() {
         cardElement.className = 'track-card';
         cardElement.textContent = '?';
         cardElement.setAttribute('data-position', i);
+        // Position directly in main grid
+        cardElement.style.gridColumn = i + 1;
+        cardElement.style.gridRow = 1;
         trackCardsContainer.appendChild(cardElement);
         
         raceState.trackCards.push({
@@ -688,7 +714,7 @@ function updateHorsePosition(suit) {
     
     console.log(`📍 Updating horse ${suit} position to row ${row}, column ${column}`);
     
-    // Set grid position within the track-start sub-grid
+    // Set grid position directly in main grid
     horseElement.style.gridRow = row;
     horseElement.style.gridColumn = column;
     
@@ -697,12 +723,12 @@ function updateHorsePosition(suit) {
 
 function getHorseRow(suit) {
     const suitMap = {
-        '♠': 1, // Row 1 in sub-grid
-        '♥': 2, // Row 2 in sub-grid
-        '♦': 3, // Row 3 in sub-grid
-        '♣': 4  // Row 4 in sub-grid
+        '♠': 2, // Row 2 in main grid
+        '♥': 3, // Row 3 in main grid
+        '♦': 4, // Row 4 in main grid
+        '♣': 5  // Row 5 in main grid
     };
-    return suitMap[suit] || 1;
+    return suitMap[suit] || 2;
 }
 
 function checkTrackCardReveal() {
