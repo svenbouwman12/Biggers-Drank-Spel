@@ -130,17 +130,24 @@ function updateSettingsUI() {
 // ============================================================================
 
 function showScreen(screenId) {
+    console.log(`📱 showScreen() called with: ${screenId}`);
+    
     // Verberg alle schermen
     const screens = document.querySelectorAll('.screen');
+    console.log(`📱 Found ${screens.length} screens`);
     screens.forEach(screen => screen.classList.remove('active'));
     
     // Toon gewenst scherm
     const targetScreen = document.getElementById(screenId);
+    console.log(`📱 Target screen element:`, targetScreen);
+    
     if (targetScreen) {
         targetScreen.classList.add('active');
         console.log(`📱 Switched to screen: ${screenId}`);
+        console.log(`📱 Target screen classes:`, targetScreen.className);
     } else {
         console.error(`❌ Screen not found: ${screenId}`);
+        console.error(`❌ Available screens:`, Array.from(document.querySelectorAll('.screen')).map(s => s.id));
     }
 }
 
@@ -165,6 +172,21 @@ function showScoreboard() {
 function showGameRules(gameType) {
     // Implementation will be added per game
     console.log(`📖 Showing rules for: ${gameType}`);
+}
+
+function startGame(gameType) {
+    console.log(`🎮 Starting game: ${gameType}`);
+    console.log(`🎮 Game state:`, gameState);
+    console.log(`🎮 Race state:`, raceState);
+    
+    if (gameType === 'paardenrace') {
+        console.log(`🏇 About to call showRaceGame()`);
+        showRaceGame();
+        console.log(`🏇 showRaceGame() called`);
+    } else {
+        console.log(`⚠️ Game ${gameType} not implemented yet`);
+        alert(`Game ${gameType} is nog niet geïmplementeerd!`);
+    }
 }
 
 // ============================================================================
@@ -287,8 +309,15 @@ function startGame(gameType) {
 // ============================================================================
 
 function showRaceGame() {
+    console.log('🏇 showRaceGame() called');
+    console.log('🏇 About to call showScreen("paardenraceGame")');
+    
     showScreen('paardenraceGame');
+    console.log('🏇 showScreen() called');
+    
+    console.log('🏇 About to call resetRaceState()');
     resetRaceState();
+    console.log('🏇 resetRaceState() called');
     
     // Set host status for single player mode
     if (!gameState.isMultiplayer) {
@@ -296,7 +325,9 @@ function showRaceGame() {
         console.log('🏇 Single player mode - Host status set to true');
     }
     
+    console.log('🏇 About to call startBettingPhase()');
     startBettingPhase();
+    console.log('🏇 startBettingPhase() called');
 }
 
 function resetRaceState() {
