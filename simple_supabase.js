@@ -16,8 +16,18 @@ function initializeSupabase() {
     try {
         console.log('🔌 Initializing Simple Supabase connection...');
         
+        // Wait for Supabase to load if not immediately available
         if (typeof window.supabase === 'undefined') {
-            throw new Error('Supabase library not loaded');
+            console.log('⏳ Waiting for Supabase CDN to load...');
+            setTimeout(() => {
+                if (typeof window.supabase === 'undefined') {
+                    console.warn('⚠️ Supabase CDN not loaded, using demo mode');
+                    window.simpleSupabase = createDemoMode();
+                    return;
+                }
+                initializeSupabase();
+            }, 1000);
+            return;
         }
         
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -392,5 +402,83 @@ window.simpleSupabase = {
     generateRoomCode,
     generatePlayerId
 };
+
+// ============================================================================
+// DEMO MODE (FALLBACK WHEN SUPABASE NOT AVAILABLE)
+// ============================================================================
+
+function createDemoMode() {
+    console.log('🎮 Creating demo mode for offline testing');
+    
+    return {
+        // Demo mode functions that simulate Supabase behavior
+        createRoom: async (roomData) => {
+            console.log('🎮 Demo: Creating room', roomData);
+            return { 
+                data: { 
+                    id: 'demo-room-' + Date.now(),
+                    ...roomData,
+                    code: 'DEMO' + Math.random().toString(36).substr(2, 5).toUpperCase()
+                }, 
+                error: null 
+            };
+        },
+        
+        addPlayer: async (playerData) => {
+            console.log('🎮 Demo: Adding player', playerData);
+            return { data: { id: 'demo-player-' + Date.now(), ...playerData }, error: null };
+        },
+        
+        getPlayers: async (roomCode) => {
+            console.log('🎮 Demo: Getting players for', roomCode);
+            return { data: [], error: null };
+        },
+        
+        updatePlayer: async (playerId, updates) => {
+            console.log('🎮 Demo: Updating player', playerId, updates);
+            return { data: { id: playerId, ...updates }, error: null };
+        },
+        
+        deletePlayer: async (playerId) => {
+            console.log('🎮 Demo: Deleting player', playerId);
+            return { data: null, error: null };
+        },
+        
+        getRooms: async () => {
+            console.log('🎮 Demo: Getting rooms');
+            return { data: [], error: null };
+        },
+        
+        updateRoom: async (roomCode, updates) => {
+            console.log('🎮 Demo: Updating room', roomCode, updates);
+            return { data: { code: roomCode, ...updates }, error: null };
+        },
+        
+        deleteRoom: async (roomCode) => {
+            console.log('🎮 Demo: Deleting room', roomCode);
+            return { data: null, error: null };
+        },
+        
+        addGameEvent: async (eventData) => {
+            console.log('🎮 Demo: Adding game event', eventData);
+            return { data: { id: 'demo-event-' + Date.now(), ...eventData }, error: null };
+        },
+        
+        getGameEvents: async (roomCode, since) => {
+            console.log('🎮 Demo: Getting game events for', roomCode);
+            return { data: [], error: null };
+        },
+        
+        cleanupInactivePlayers: async () => {
+            console.log('🎮 Demo: Cleanup inactive players');
+            return { data: null, error: null };
+        },
+        
+        cleanupEmptyRooms: async () => {
+            console.log('🎮 Demo: Cleanup empty rooms');
+            return { data: null, error: null };
+        }
+    };
+}
 
 console.log('✅ Simple Supabase client loaded');
