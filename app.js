@@ -174,20 +174,6 @@ function showGameRules(gameType) {
     console.log(`📖 Showing rules for: ${gameType}`);
 }
 
-function startGame(gameType) {
-    console.log(`🎮 Starting game: ${gameType}`);
-    console.log(`🎮 Game state:`, gameState);
-    console.log(`🎮 Race state:`, raceState);
-    
-    if (gameType === 'paardenrace') {
-        console.log(`🏇 About to call showRaceGame()`);
-        showRaceGame();
-        console.log(`🏇 showRaceGame() called`);
-    } else {
-        console.log(`⚠️ Game ${gameType} not implemented yet`);
-        alert(`Game ${gameType} is nog niet geïmplementeerd!`);
-    }
-}
 
 // ============================================================================
 // INSTELLINGEN MANAGEMENT
@@ -282,21 +268,21 @@ function resetScoreboard() {
 function startGame(gameType) {
     gameState.currentGame = gameType;
     
+    console.log(`🎮 Game state:`, gameState);
+    console.log(`🎮 Race state:`, raceState);
+    
     // Reset spel specifieke states
     if (gameType === 'paardenrace') {
-        // Paardenrace implementation will be added
         console.log('🏇 Starting Paardenrace game');
+        console.log(`🏇 About to call showRaceGame()`);
+        showRaceGame();
+        console.log(`🏇 showRaceGame() called`);
     } else if (gameType === 'mexico') {
-        // Mexico implementation will be added
         console.log('🎲 Starting Mexico game');
+        alert('Mexico game is nog niet geïmplementeerd!');
     } else if (gameType === 'bussen') {
-        // Bussen implementation will be added
         console.log('🃏 Starting Bussen game');
-    }
-    
-    // Show multiplayer lobby for now
-    if (window.simpleLobby) {
-        window.simpleLobby.showLobbyScreen();
+        alert('Bussen game is nog niet geïmplementeerd!');
     }
 }
 
