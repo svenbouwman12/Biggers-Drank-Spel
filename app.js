@@ -335,6 +335,161 @@ function resetRaceState() {
 }
 
 // ============================================================================
+// PAARDENRACE GAME FUNCTIONS (BASIC)
+// ============================================================================
+
+function startBettingPhase() {
+    console.log('💰 Starting betting phase');
+    
+    // Reset bet counters and player lists
+    ['♠', '♥', '♦', '♣'].forEach(suit => {
+        const suitName = suit === '♠' ? 'spades' : 
+                        suit === '♥' ? 'hearts' :
+                        suit === '♦' ? 'diamonds' : 'clubs';
+        
+        // Reset count
+        const countElement = document.getElementById(`bet-${suitName}`);
+        if (countElement) {
+            countElement.textContent = '0';
+        }
+        
+        // Reset player names
+        const playersElement = document.getElementById(`bet-players-${suitName}`);
+        if (playersElement) {
+            playersElement.textContent = '';
+        }
+    });
+    
+    // Start betting timer
+    raceState.bettingTimer = 30;
+    updateBettingTimer();
+    
+    // Only host starts the timer interval
+    if (raceState.isHost) {
+        console.log('⏰ Host starting betting timer');
+        raceState.bettingInterval = setInterval(() => {
+            raceState.bettingTimer--;
+            updateBettingTimer();
+            
+            // Broadcast timer updates to other players (throttled)
+            const now = Date.now();
+            if (window.simpleSupabase && gameState.isMultiplayer && 
+                now - raceState.lastBettingUpdate > 1000) {
+                if (typeof broadcastBettingUpdate === 'function') {
+                    broadcastBettingUpdate();
+                }
+                raceState.lastBettingUpdate = now;
+            }
+            
+            if (raceState.bettingTimer <= 0) {
+                endBettingPhase();
+            }
+        }, 1000);
+    } else {
+        console.log('⏰ Non-host waiting for timer updates from host');
+    }
+}
+
+function updateBettingTimer() {
+    const timerElement = document.getElementById('bettingTimer');
+    if (timerElement) {
+        timerElement.textContent = raceState.bettingTimer;
+        
+        // Change color when time is running out
+        if (raceState.bettingTimer <= 10) {
+            timerElement.style.background = '#e74c3c';
+        } else if (raceState.bettingTimer <= 20) {
+            timerElement.style.background = '#f39c12';
+        } else {
+            timerElement.style.background = '#ff6b6b';
+        }
+    }
+}
+
+function endBettingPhase() {
+    console.log('⏰ Betting phase ended');
+    
+    // Stop timer
+    if (raceState.bettingInterval) {
+        clearInterval(raceState.bettingInterval);
+        raceState.bettingInterval = null;
+    }
+    
+    // Set timer to 0
+    raceState.bettingTimer = 0;
+    updateBettingTimer();
+    
+    // Assign random bets to players who didn't bet
+    gameState.players.forEach(player => {
+        if (!raceState.playerBets[player.id]) {
+            const suits = ['♠', '♥', '♦', '♣'];
+            const randomSuit = suits[Math.floor(Math.random() * suits.length)];
+            raceState.playerBets[player.id] = randomSuit;
+            console.log(`Random bet assigned: ${player.name} -> ${randomSuit}`);
+        }
+    });
+    
+    // Generate race seed for consistent randomness
+    raceState.raceSeed = Date.now();
+    
+    // Start race phase first (host)
+    startRacePhase();
+    
+    // Then broadcast race start to other players
+    if (window.simpleSupabase && raceState.isHost && gameState.isMultiplayer) {
+        if (typeof broadcastRaceStart === 'function') {
+            broadcastRaceStart();
+        }
+    }
+}
+
+function startRacePhase() {
+    console.log('🏇 Starting race phase');
+    console.log('🏇 Host status:', raceState.isHost);
+    
+    raceState.phase = 'racing';
+    
+    // Hide betting phase, show race phase
+    const bettingPhase = document.getElementById('bettingPhase');
+    const racePhase = document.getElementById('racePhase');
+    
+    if (bettingPhase) bettingPhase.classList.remove('active');
+    if (racePhase) racePhase.classList.add('active');
+    
+    // Create track cards
+    if (typeof createTrackCards === 'function') {
+        createTrackCards();
+    }
+    
+    // Create draw pile
+    if (typeof createDrawPile === 'function') {
+        createDrawPile();
+    }
+    
+    // Update UI
+    if (typeof updateBetCounts === 'function') {
+        updateBetCounts();
+    }
+    
+    // Start automatic card drawing (only for host in multiplayer, or always in single player)
+    if (raceState.isHost || !gameState.isMultiplayer) {
+        console.log('🎴 Starting automatic card drawing');
+        if (typeof startAutomaticCardDrawing === 'function') {
+            startAutomaticCardDrawing();
+        }
+    } else {
+        console.log('🎴 Not starting automatic drawing - not host');
+    }
+    
+    // Show manual draw button as fallback
+    const drawButton = document.getElementById('drawCard');
+    if (drawButton) {
+        drawButton.style.display = 'block';
+        drawButton.textContent = 'Trek Kaart (Handmatig)';
+    }
+}
+
+// ============================================================================
 // EFFECTEN EN ANIMATIES
 // ============================================================================
 
