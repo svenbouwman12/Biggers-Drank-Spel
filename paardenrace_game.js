@@ -25,7 +25,7 @@ function startBettingPhase() {
     });
     
     // Start betting timer
-    raceState.bettingTimer = 30;
+    raceState.bettingTimer = 10;
     updateBettingTimer();
     
     // Only host starts the timer interval
