@@ -686,23 +686,23 @@ function updateHorsePosition(suit) {
     const row = getHorseRow(suit);
     const column = raceState.horses[suit] + 1; // +1 because grid is 1-indexed
     
-    console.log(`📍 Updating horse position to row ${row}, column ${column}`);
+    console.log(`📍 Updating horse ${suit} position to row ${row}, column ${column}`);
     
-    // Set grid position
+    // Set grid position within the track-start sub-grid
     horseElement.style.gridRow = row;
     horseElement.style.gridColumn = column;
     
-    console.log(`📍 Horse ${suit} positioned at grid row ${row}, column ${column}`);
+    console.log(`📍 Horse ${suit} positioned at row ${row}, column ${column}`);
 }
 
 function getHorseRow(suit) {
     const suitMap = {
-        '♠': 2, // Row 2
-        '♥': 3, // Row 3
-        '♦': 4, // Row 4
-        '♣': 5  // Row 5
+        '♠': 1, // Row 1 in sub-grid
+        '♥': 2, // Row 2 in sub-grid
+        '♦': 3, // Row 3 in sub-grid
+        '♣': 4  // Row 4 in sub-grid
     };
-    return suitMap[suit] || 2;
+    return suitMap[suit] || 1;
 }
 
 function checkTrackCardReveal() {
