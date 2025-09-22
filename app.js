@@ -716,11 +716,21 @@ function updateHorsePosition(suit) {
     
     console.log(`📍 Updating horse ${suit} position to row ${row}, column ${column}`);
     
-    // Set grid position directly in main grid
-    horseElement.style.gridRow = row;
-    horseElement.style.gridColumn = column;
+    // Get the race track container to calculate position
+    const raceTrack = horseElement.closest('.race-track');
+    if (!raceTrack) return;
     
-    console.log(`📍 Horse ${suit} positioned at row ${row}, column ${column}`);
+    // Calculate the position using transform instead of grid
+    const trackWidth = raceTrack.offsetWidth;
+    const cardWidth = trackWidth / 9; // 9 columns
+    const newX = (column - 1) * cardWidth;
+    
+    // Set position using transform for smooth movement
+    horseElement.style.transform = `translateX(${newX}px)`;
+    horseElement.style.gridRow = row;
+    horseElement.style.gridColumn = 1; // Always stay in column 1, use transform for movement
+    
+    console.log(`📍 Horse ${suit} positioned at row ${row}, transform translateX(${newX}px)`);
 }
 
 function getHorseRow(suit) {
