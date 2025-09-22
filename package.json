@@ -1,0 +1,37 @@
+{
+  "name": "drankspel-party",
+  "version": "1.0.0",
+  "description": "🎉 Multiplayer drinking games webapp with Supabase integration",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "serve": "npx serve .",
+    "dev": "npx live-server --port=3000 --open=index.html"
+  },
+  "keywords": [
+    "drinking-games",
+    "multiplayer",
+    "supabase",
+    "vanilla-js",
+    "party-games",
+    "real-time",
+    "lobby-system"
+  ],
+  "author": "Rene Van der Werff",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/svenbouwman12/Biggers-Drank-Spel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/svenbouwman12/Biggers-Drank-Spel/issues"
+  },
+  "homepage": "https://svenbouwman12.github.io/Biggers-Drank-Spel",
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "serve": "^14.2.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
