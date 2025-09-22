@@ -514,8 +514,10 @@ function positionAcesInGrid() {
     aces.forEach(ace => {
         const aceElement = document.getElementById(ace.id);
         if (aceElement) {
+            // Remove from track-start container and position directly in main grid
             aceElement.style.gridColumn = 1; // Start at column 1
             aceElement.style.gridRow = ace.row; // Each ace in its own row
+            aceElement.style.position = 'relative'; // Ensure proper positioning
             console.log(`🏇 Positioned ${ace.suit} at row ${ace.row}, column 1`);
         }
     });
