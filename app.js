@@ -29,7 +29,7 @@ let lobbyState = {
 // Paardenrace Game State
 let raceState = {
     phase: 'betting', // 'betting', 'racing', 'results'
-    bettingTimer: 30,
+    bettingTimer: 10,
     bettingInterval: null,
     cardDrawInterval: null,
     cardDrawDelay: 2000, // 2 seconds between cards
@@ -318,7 +318,7 @@ function showRaceGame() {
 
 function resetRaceState() {
     raceState.phase = 'betting';
-    raceState.bettingTimer = 30;
+    raceState.bettingTimer = 10;
     raceState.bettingInterval = null;
     raceState.cardDrawInterval = null;
     raceState.playerBets = {};
@@ -378,7 +378,7 @@ function startBettingPhase() {
     });
     
     // Start betting timer
-    raceState.bettingTimer = 30;
+    raceState.bettingTimer = 10;
     updateBettingTimer();
     
     // Only host starts the timer interval
