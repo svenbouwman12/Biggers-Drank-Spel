@@ -685,16 +685,22 @@ h3 {
     min-height: 400px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     border: 3px solid #8b4513;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 10px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .track-finish {
-    position: absolute;
-    right: 30px;
-    top: 30px;
-    font-size: 3rem;
+    grid-column: 9;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
     color: #f39c12;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     animation: finishPulse 2s infinite;
@@ -707,21 +713,17 @@ h3 {
 }
 
 .track-cards {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    grid-column: 1 / 9;
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
     gap: 10px;
-    padding: 20px 0;
-    margin: 0;
-    flex-wrap: wrap;
-    position: relative;
-    width: 100%;
-    max-width: 600px;
+    z-index: 5;
 }
 
 .track-card {
-    width: 50px;
-    height: 70px;
+    width: 100%;
+    height: 100%;
     background: white;
     border-radius: 8px;
     display: flex;
@@ -733,6 +735,7 @@ h3 {
     border: 2px solid #333;
     transition: all 0.3s ease;
     position: relative;
+    aspect-ratio: 3/4;
 }
 
 .track-card:before {
@@ -777,17 +780,17 @@ h3 {
 }
 
 .track-start {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    grid-column: 1;
+    grid-row: 2 / 6;
+    display: grid;
+    grid-template-rows: repeat(4, 1fr);
+    gap: 10px;
     z-index: 5;
-    margin-top: 20px;
-    align-items: center;
 }
 
 .horse-ace {
-    width: 60px;
-    height: 90px;
+    width: 100%;
+    height: 100%;
     background: white;
     border-radius: 8px;
     display: flex;
@@ -799,6 +802,7 @@ h3 {
     border: 2px solid #333;
     position: relative;
     transition: all 0.4s ease-out;
+    aspect-ratio: 3/4;
 }
 
 .horse-ace:before {
@@ -956,35 +960,26 @@ h3 {
     .race-track {
         padding: 20px;
         min-height: 350px;
+        max-width: 700px;
     }
     
     .track-finish {
-        right: 20px;
-        top: 20px;
         font-size: 2.5rem;
     }
     
     .track-cards {
-        margin: 0;
         gap: 8px;
-        padding: 15px 0;
-        max-width: 500px;
     }
     
     .track-card {
-        width: 45px;
-        height: 65px;
         font-size: 1.3rem;
     }
     
     .track-start {
-        gap: 15px;
-        margin-top: 15px;
+        gap: 8px;
     }
     
     .horse-ace {
-        width: 50px;
-        height: 75px;
         font-size: 1.8rem;
     }
     
@@ -1008,28 +1003,22 @@ h3 {
     .race-track {
         padding: 15px;
         min-height: 300px;
+        max-width: 600px;
     }
     
     .track-cards {
-        margin: 0;
         gap: 6px;
-        max-width: 400px;
     }
     
     .track-card {
-        width: 40px;
-        height: 60px;
         font-size: 1.2rem;
     }
     
     .track-start {
-        gap: 12px;
-        margin-top: 10px;
+        gap: 6px;
     }
     
     .horse-ace {
-        width: 45px;
-        height: 70px;
         font-size: 1.6rem;
     }
     
