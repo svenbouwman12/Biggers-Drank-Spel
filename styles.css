@@ -685,6 +685,9 @@ h3 {
     min-height: 400px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     border: 3px solid #8b4513;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .track-finish {
@@ -705,13 +708,15 @@ h3 {
 
 .track-cards {
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
     gap: 10px;
     padding: 20px 0;
-    margin-left: 120px;
+    margin: 0;
     flex-wrap: wrap;
     position: relative;
+    width: 100%;
+    max-width: 600px;
 }
 
 .track-card {
@@ -772,13 +777,12 @@ h3 {
 }
 
 .track-start {
-    position: absolute;
-    left: 30px;
-    bottom: 30px;
     display: flex;
     flex-direction: column;
     gap: 20px;
     z-index: 5;
+    margin-top: 20px;
+    align-items: center;
 }
 
 .horse-ace {
@@ -961,9 +965,10 @@ h3 {
     }
     
     .track-cards {
-        margin-left: 80px;
+        margin: 0;
         gap: 8px;
         padding: 15px 0;
+        max-width: 500px;
     }
     
     .track-card {
@@ -973,9 +978,8 @@ h3 {
     }
     
     .track-start {
-        left: 20px;
-        bottom: 20px;
         gap: 15px;
+        margin-top: 15px;
     }
     
     .horse-ace {
@@ -1007,8 +1011,9 @@ h3 {
     }
     
     .track-cards {
-        margin-left: 70px;
+        margin: 0;
         gap: 6px;
+        max-width: 400px;
     }
     
     .track-card {
@@ -1018,9 +1023,8 @@ h3 {
     }
     
     .track-start {
-        left: 15px;
-        bottom: 15px;
         gap: 12px;
+        margin-top: 10px;
     }
     
     .horse-ace {
