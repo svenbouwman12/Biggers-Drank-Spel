@@ -797,7 +797,7 @@ h3 {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     border: 2px solid #333;
     position: relative;
-    transition: transform 0.4s ease-in-out;
+    transition: grid-column 0.3s ease-out;
     aspect-ratio: 3/4;
 }
 
