@@ -366,28 +366,39 @@ app.get('/api/room/:roomCode', async (req, res) => {
             type: 'roomUpdate'
         };
         
-        // Add current game state if game is active
-        console.log(`🎮 Memory room check:`, {
+        // Add current game state from database or memory
+        console.log(`🎮 Game state check:`, {
+            databaseStatus: roomData.status,
             hasMemoryRoom: !!memoryRoom,
-            gameState: memoryRoom?.gameState,
-            hasCurrentGame: !!memoryRoom?.currentGame,
-            isActive: memoryRoom?.currentGame?.isActive
+            hasDatabaseSettings: !!roomData.settings,
+            databaseGameState: roomData.settings?.currentGame
         });
         
-        if (memoryRoom && memoryRoom.currentGame && memoryRoom.currentGame.isActive) {
-            const timeRemaining = memoryRoom.currentGame.phase === 'question' ? 
-                Math.max(0, 30000 - (Date.now() - memoryRoom.currentGame.roundStartTime)) : 
-                Math.max(0, 10000 - (Date.now() - memoryRoom.currentGame.roundStartTime));
+        // Try to get game state from database first (more reliable in serverless)
+        let currentGame = null;
+        
+        if (roomData.status === 'playing' && roomData.settings && roomData.settings.currentGame) {
+            currentGame = roomData.settings.currentGame;
+            console.log(`🎮 Found game state in database:`, currentGame);
+        } else if (memoryRoom && memoryRoom.currentGame && memoryRoom.currentGame.isActive) {
+            currentGame = memoryRoom.currentGame;
+            console.log(`🎮 Found game state in memory:`, currentGame);
+        }
+        
+        if (currentGame && currentGame.isActive) {
+            const timeRemaining = currentGame.phase === 'question' ? 
+                Math.max(0, 30000 - (Date.now() - currentGame.roundStartTime)) : 
+                Math.max(0, 10000 - (Date.now() - currentGame.roundStartTime));
                 
             roomResponse.currentGame = {
-                id: memoryRoom.currentGame.id,
-                type: memoryRoom.currentGame.type,
-                name: memoryRoom.currentGame.name,
-                currentRound: memoryRoom.currentGame.currentRound,
-                totalRounds: memoryRoom.currentGame.totalRounds,
-                currentQuestion: memoryRoom.currentGame.currentQuestion,
-                phase: memoryRoom.currentGame.phase,
-                roundStartTime: memoryRoom.currentGame.roundStartTime,
+                id: currentGame.id,
+                type: currentGame.type,
+                name: currentGame.name,
+                currentRound: currentGame.currentRound,
+                totalRounds: currentGame.totalRounds,
+                currentQuestion: currentGame.currentQuestion,
+                phase: currentGame.phase,
+                roundStartTime: currentGame.roundStartTime,
                 timeRemaining: timeRemaining,
                 isActive: true
             };
@@ -714,12 +725,33 @@ app.post('/api/game/start', async (req, res) => {
             return res.status(400).json({ error: 'Need at least 2 players' });
         }
         
-        // Update room status in database
+        // Update room status in database with game state
         console.log(`🔄 Attempting to update room ${roomCode} status to 'playing'...`);
+        
+        // Create game state data with actual game data
+        const gameStateData = {
+            id: Date.now(),
+            type: gameType || 'simpleTest',
+            name: 'Simple Test Game',
+            currentRound: 1,
+            totalRounds: 5,
+            phase: 'question',
+            roundStartTime: Date.now(),
+            isActive: true,
+            currentQuestion: {
+                question: "What is your favorite color?",
+                options: ["Red", "Blue", "Green", "Yellow"]
+            }
+        };
+        
         console.log(`📝 Update data:`, { 
             status: 'playing',
             started_at: new Date().toISOString(),
-            game_type: gameType || 'simpleTest'
+            game_type: gameType || 'simpleTest',
+            settings: JSON.stringify({
+                ...room.settings,
+                currentGame: gameStateData
+            })
         });
         
         const { data: updateData, error: updateError } = await supabase
@@ -727,7 +759,11 @@ app.post('/api/game/start', async (req, res) => {
             .update({ 
                 status: 'playing',
                 started_at: new Date().toISOString(),
-                game_type: gameType || 'simpleTest'
+                game_type: gameType || 'simpleTest',
+                settings: JSON.stringify({
+                    ...room.settings,
+                    currentGame: gameStateData
+                })
             })
             .eq('code', roomCode)
             .select();
