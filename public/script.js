@@ -6,6 +6,7 @@
 let socket;
 let currentRoom = null;
 let currentPlayer = null;
+let currentRoomData = null;
 let gameState = {
     players: [],
     currentGame: null,
@@ -68,10 +69,7 @@ function initializeSocket() {
             }
         });
         
-        socket.on('connect_error', (error) => {
-            console.error('❌ Connection error:', error);
-            showNotification('Connection failed. Retrying...', 'error');
-        });
+        // connect_error handler moved below
         
         socket.on('reconnect', (attemptNumber) => {
             console.log('🔄 Reconnected after', attemptNumber, 'attempts');
@@ -84,8 +82,21 @@ function initializeSocket() {
         
         socket.on('reconnect_failed', () => {
             console.error('❌ Reconnection failed, switching to API mode');
-            showNotification('Connection failed. Using offline mode...', 'error');
+            showNotification('Connection failed. Using API mode...', 'error');
             initializeAPIFallback();
+        });
+        
+        // Add immediate fallback on connection error
+        socket.on('connect_error', (error) => {
+            console.error('❌ Connection error:', error);
+            showNotification('Socket.IO failed. Switching to API mode...', 'error');
+            // Immediately switch to API mode if Socket.IO fails
+            setTimeout(() => {
+                if (!socket || !socket.connected) {
+                    console.log('🔄 Switching to API mode due to connection failure');
+                    initializeAPIFallback();
+                }
+            }, 2000);
         });
         
         // Add a timeout to hide loading if connection takes too long
@@ -233,7 +244,7 @@ function handleRoomCreated(data) {
 function handlePlayerJoined(data) {
     console.log('👤 Player joined:', data);
     
-    if (currentRoom === data.room.code) {
+    if (currentRoom && currentRoom === data.room.code) {
         updateLobby(data.room);
         showNotification(`${data.player.name} joined the game!`, 'success');
     }
@@ -242,7 +253,7 @@ function handlePlayerJoined(data) {
 function handlePlayerLeft(data) {
     console.log('👋 Player left:', data);
     
-    if (currentRoom === data.room.code) {
+    if (currentRoom && currentRoom === data.room.code) {
         updateLobby(data.room);
         showNotification(`${data.playerName} left the game`, 'info');
     }
@@ -251,7 +262,7 @@ function handlePlayerLeft(data) {
 function handleHostChanged(data) {
     console.log('👑 Host changed:', data);
     
-    if (data.newHost.id === socket.id) {
+    if (currentPlayer && data.newHost.id === socket.id) {
         currentPlayer.isHost = true;
         showNotification('You are now the host!', 'success');
     }
@@ -874,15 +885,29 @@ function startPolling(roomCode) {
     
     pollingInterval = setInterval(async () => {
         try {
+            console.log('🔄 Polling for room updates...');
             const response = await fetch(`/api/room/${roomCode}`);
             if (response.ok) {
                 const data = await response.json();
+                console.log('📡 Polling response:', data);
+                
+                // Check if new players joined
+                if (data.playerCount > (currentRoomData ? currentRoomData.playerCount : 0)) {
+                    const newPlayers = data.players.filter(p => 
+                        !currentRoomData || !currentRoomData.players.find(cp => cp.id === p.id)
+                    );
+                    newPlayers.forEach(player => {
+                        showNotification(`${player.name} joined the game!`, 'success');
+                    });
+                }
+                
                 updateLobby(data);
+                currentRoomData = data;
             }
         } catch (error) {
-            console.error('Polling error:', error);
+            console.error('❌ Polling error:', error);
         }
-    }, 2000); // Poll every 2 seconds
+    }, 2000); // Poll every 2 seconds for better real-time feel
 }
 
 function stopPolling() {
