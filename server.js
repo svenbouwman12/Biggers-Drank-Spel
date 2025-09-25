@@ -424,10 +424,68 @@ app.post('/api/room/join', async (req, res) => {
 app.post('/api/game/start', async (req, res) => {
     try {
         const { roomCode, gameType } = req.body;
-        const room = rooms.get(roomCode);
+        
+        // Try to get room from memory first, then from database
+        let room = rooms.get(roomCode);
         
         if (!room) {
-            return res.status(404).json({ error: 'Room not found' });
+            console.log(`🔄 Room ${roomCode} not in memory for game start, checking database...`);
+            
+            const { data: roomData, error: roomError } = await supabase
+                .from('rooms')
+                .select('*')
+                .eq('code', roomCode)
+                .single();
+                
+            if (roomError || !roomData) {
+                return res.status(404).json({ error: 'Room not found' });
+            }
+            
+            // Get existing players from database
+            const { data: playersData, error: playersError } = await supabase
+                .from('players')
+                .select('*')
+                .eq('room_id', roomData.id)
+                .is('left_at', null);
+                
+            if (playersError) {
+                console.error('❌ Error fetching players:', playersError);
+                return res.status(500).json({ error: 'Failed to fetch players' });
+            }
+            
+            // Recreate room in memory
+            room = {
+                code: roomCode,
+                host: roomData.host_id,
+                hostName: roomData.host_name,
+                gameType: roomData.game_type,
+                players: new Map(),
+                gameState: roomData.status,
+                currentGame: null,
+                scores: new Map(),
+                settings: roomData.settings || {
+                    maxPlayers: 8,
+                    gameDuration: 30,
+                    categories: ['spicy', 'funny', 'sport', 'movie']
+                }
+            };
+            
+            // Add existing players to room
+            playersData.forEach(playerData => {
+                const player = {
+                    id: playerData.socket_id,
+                    name: playerData.player_name,
+                    avatar: playerData.avatar,
+                    isHost: playerData.is_host,
+                    score: playerData.score || 0,
+                    joinedAt: playerData.joined_at
+                };
+                room.players.set(player.id, player);
+            });
+            
+            // Store in memory
+            rooms.set(roomCode, room);
+            console.log(`🔄 Room ${roomCode} restored from database with ${room.players.size} players`);
         }
         
         if (room.players.size < 2) {
@@ -467,10 +525,72 @@ app.post('/api/game/start', async (req, res) => {
 app.post('/api/game/vote', async (req, res) => {
     try {
         const { roomCode, playerId, questionId, answer } = req.body;
-        const room = rooms.get(roomCode);
         
-        if (!room || !room.currentQuestion) {
-            return res.status(404).json({ error: 'Game not found' });
+        // Try to get room from memory first, then from database
+        let room = rooms.get(roomCode);
+        
+        if (!room) {
+            console.log(`🔄 Room ${roomCode} not in memory for vote, checking database...`);
+            
+            const { data: roomData, error: roomError } = await supabase
+                .from('rooms')
+                .select('*')
+                .eq('code', roomCode)
+                .single();
+                
+            if (roomError || !roomData) {
+                return res.status(404).json({ error: 'Game not found' });
+            }
+            
+            // Get existing players from database
+            const { data: playersData, error: playersError } = await supabase
+                .from('players')
+                .select('*')
+                .eq('room_id', roomData.id)
+                .is('left_at', null);
+                
+            if (playersError) {
+                console.error('❌ Error fetching players:', playersError);
+                return res.status(500).json({ error: 'Failed to fetch players' });
+            }
+            
+            // Recreate room in memory
+            room = {
+                code: roomCode,
+                host: roomData.host_id,
+                hostName: roomData.host_name,
+                gameType: roomData.game_type,
+                players: new Map(),
+                gameState: roomData.status,
+                currentGame: null,
+                scores: new Map(),
+                settings: roomData.settings || {
+                    maxPlayers: 8,
+                    gameDuration: 30,
+                    categories: ['spicy', 'funny', 'sport', 'movie']
+                }
+            };
+            
+            // Add existing players to room
+            playersData.forEach(playerData => {
+                const player = {
+                    id: playerData.socket_id,
+                    name: playerData.player_name,
+                    avatar: playerData.avatar,
+                    isHost: playerData.is_host,
+                    score: playerData.score || 0,
+                    joinedAt: playerData.joined_at
+                };
+                room.players.set(player.id, player);
+            });
+            
+            // Store in memory
+            rooms.set(roomCode, room);
+            console.log(`🔄 Room ${roomCode} restored from database with ${room.players.size} players`);
+        }
+        
+        if (!room.currentQuestion) {
+            return res.status(404).json({ error: 'No active game found' });
         }
         
         room.currentQuestion.answers.set(playerId, answer);
