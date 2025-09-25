@@ -405,13 +405,25 @@ function startGame() {
     
     const gameType = gameState.currentGame || 'mostLikelyTo';
     
-    socket.emit('startGame', {
-        gameType: gameType
-    });
+    if (apiMode || !socket || !socket.connected) {
+        // Use API mode for starting game
+        startGameAPI(gameType);
+    } else {
+        // Use Socket.IO
+        socket.emit('startGame', {
+            gameType: gameType
+        });
+    }
 }
 
 function leaveLobby() {
-    if (socket) {
+    // Stop polling if in API mode
+    if (apiMode) {
+        stopPolling();
+    }
+    
+    // Disconnect socket if connected
+    if (socket && socket.connected) {
         socket.disconnect();
     }
     
@@ -942,12 +954,37 @@ function stopPolling() {
     }
 }
 
-// Override leaveLobby to stop polling
-const originalLeaveLobby = leaveLobby;
-function leaveLobby() {
-    stopPolling();
-    originalLeaveLobby();
+async function startGameAPI(gameType) {
+    try {
+        console.log('🎮 Starting game via API:', gameType);
+        
+        const response = await fetch('/api/game/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                roomCode: currentRoom,
+                gameType: gameType
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log('✅ Game started via API:', data);
+            handleGameStarted(data);
+        } else {
+            const error = await response.json();
+            console.error('❌ Failed to start game:', error);
+            showNotification(error.error || 'Failed to start game', 'error');
+        }
+    } catch (error) {
+        console.error('❌ Error starting game:', error);
+        showNotification('Failed to start game', 'error');
+    }
 }
+
+// leaveLobby function already updated above to handle API mode
 
 // ============================================================================
 // END OF FILE
