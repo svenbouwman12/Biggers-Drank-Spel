@@ -432,7 +432,17 @@ function stopPolling() {
 
 function updateLobby(data) {
     if (currentRoomData) {
-        showLobby(data);
+        // Only show lobby if we're not in a game
+        if (data.gameState === 'lobby' || data.gameState === 'waiting') {
+            showLobby(data);
+        } else if (data.gameState === 'playing') {
+            // Update current room data but don't switch to lobby
+            currentRoomData = data;
+            console.log('🎮 Game is active, staying on current screen');
+        } else {
+            // Fallback: show lobby for unknown states
+            showLobby(data);
+        }
     }
 }
 

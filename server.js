@@ -518,6 +518,8 @@ app.post('/api/game/start', async (req, res) => {
                 game_type: gameType || 'mostLikelyTo'
             })
             .eq('code', roomCode);
+            
+        console.log(`🔄 Updated room ${roomCode} status to 'playing' in database`);
 
         room.gameState = 'playing';
         room.currentGame = gameType || 'mostLikelyTo';
