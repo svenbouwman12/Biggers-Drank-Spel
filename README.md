@@ -5,7 +5,7 @@ Een moderne multiplayer online drankspel applicatie met lobby, join-code en mini
 ## 🎯 Features
 
 ### 🏠 Lobby & Join
-- **Host een game** → Krijg een unieke 6-karakter code
+- **Host een game** → Krijg een unieke 4-karakter code
 - **Join met code** → Spelers kunnen via code + nickname joinen
 - **Random avatars** → Elke speler krijgt een unieke avatar
 - **Real-time lobby** → Zie alle spelers live

@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS rooms (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    code VARCHAR(6) UNIQUE NOT NULL,
+    code VARCHAR(4) UNIQUE NOT NULL,
     host_name VARCHAR(100) NOT NULL,
     host_id VARCHAR(100), -- Socket ID or user ID
     game_type VARCHAR(20) NOT NULL DEFAULT 'mixed' CHECK (game_type IN ('mixed', 'mostLikelyTo', 'truthOrDrink', 'speedTap', 'quiz')),
@@ -525,7 +525,7 @@ COMMENT ON TABLE game_statistics IS 'Aggregated player statistics';
 COMMENT ON TABLE achievements IS 'Player achievements and badges';
 COMMENT ON TABLE custom_questions IS 'User-generated game questions';
 
-COMMENT ON COLUMN rooms.code IS 'Unique 6-character room code';
+COMMENT ON COLUMN rooms.code IS 'Unique 4-character room code';
 COMMENT ON COLUMN rooms.status IS 'Current room status: lobby, playing, finished, closed';
 COMMENT ON COLUMN players.socket_id IS 'Socket.IO connection ID';
 COMMENT ON COLUMN players.position IS 'Final position in game (1st, 2nd, etc.)';
