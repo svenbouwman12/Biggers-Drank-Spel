@@ -79,7 +79,7 @@ function generateAvatar() {
 }
 
 // Start game logic
-function startGame(roomCode, gameType) {
+async function startGame(roomCode, gameType) {
     const room = rooms.get(roomCode);
     if (!room) return;
 
@@ -104,14 +104,77 @@ function startGame(roomCode, gameType) {
             roundResults: new Map() // Store round results
         };
         
+        // Store game state in room settings for database persistence
+        room.settings = {
+            ...room.settings,
+            currentGame: {
+                id: room.currentGame.id,
+                type: room.currentGame.type,
+                name: room.currentGame.name,
+                currentRound: room.currentGame.currentRound,
+                totalRounds: room.currentGame.totalRounds,
+                rounds: room.currentGame.rounds,
+                startTime: room.currentGame.startTime,
+                isActive: room.currentGame.isActive,
+                phase: room.currentGame.phase,
+                playerVotes: [],
+                roundResults: []
+            }
+        };
+        
         // Start the first round automatically
-        startNextRound(roomCode);
+        await startNextRound(roomCode);
         
         console.log(`🎯 Balletje Balletje game started with ${room.currentGame.totalRounds} rounds`);
     }
 }
 
-function startNextRound(roomCode) {
+// Update game state in database
+async function updateGameStateInDatabase(roomCode) {
+    try {
+        const room = rooms.get(roomCode);
+        if (!room || !room.currentGame) return;
+
+        const gameStateData = {
+            id: room.currentGame.id,
+            type: room.currentGame.type,
+            name: room.currentGame.name,
+            currentRound: room.currentGame.currentRound,
+            totalRounds: room.currentGame.totalRounds,
+            currentQuestion: room.currentGame.currentQuestion,
+            phase: room.currentGame.phase,
+            roundStartTime: room.currentGame.roundStartTime,
+            isActive: room.currentGame.isActive,
+            playerVotes: Array.from(room.currentGame.playerVotes.entries()),
+            roundResults: Array.from(room.currentGame.roundResults.entries())
+        };
+
+        // Update room settings with current game state
+        room.settings = {
+            ...room.settings,
+            currentGame: gameStateData
+        };
+
+        // Update database
+        const { data: updateData, error: updateError } = await supabase
+            .from('rooms')
+            .update({ 
+                settings: JSON.stringify(room.settings)
+            })
+            .eq('code', roomCode)
+            .select();
+
+        if (updateError) {
+            console.error('❌ Error updating game state in database:', updateError);
+        } else {
+            console.log(`✅ Game state updated in database for room ${roomCode}`);
+        }
+    } catch (error) {
+        console.error('❌ Error in updateGameStateInDatabase:', error);
+    }
+}
+
+async function startNextRound(roomCode) {
     const room = rooms.get(roomCode);
     if (!room || !room.currentGame) return;
 
@@ -122,6 +185,9 @@ function startNextRound(roomCode) {
         room.currentGame.phase = 'finished';
         room.gameState = 'finished';
         console.log(`🏁 Game finished in room ${roomCode}`);
+        
+        // Update database
+        await updateGameStateInDatabase(roomCode);
         return;
     }
 
@@ -136,13 +202,16 @@ function startNextRound(roomCode) {
 
     console.log(`🎯 Round ${room.currentGame.currentRound}/${room.currentGame.totalRounds} started: ${currentQuestion.question}`);
 
-    // Auto-advance after 15 seconds (shorter for faster gameplay)
+    // Update database with current game state
+    await updateGameStateInDatabase(roomCode);
+
+    // Auto-advance after 10 seconds
     setTimeout(() => {
         advanceToResults(roomCode);
     }, 10000); // 10 seconds per question
 }
 
-function advanceToResults(roomCode) {
+async function advanceToResults(roomCode) {
     const room = rooms.get(roomCode);
     if (!room || !room.currentGame) return;
 
@@ -170,6 +239,9 @@ function advanceToResults(roomCode) {
     });
     
     console.log(`📊 Round ${room.currentGame.currentRound} results phase - Correct: ${correctAnswer}, Votes: [${voteCounts.join(', ')}]`);
+
+    // Update database with results
+    await updateGameStateInDatabase(roomCode);
 
     // Auto-advance to next round after 8 seconds
     setTimeout(() => {
@@ -1000,7 +1072,7 @@ app.post('/api/game/start', async (req, res) => {
         console.log(`👥 Players in room before game start: ${room.players.size}`);
         
         // Start the specific game
-        startGame(roomCode, room.currentGame);
+        await startGame(roomCode, room.currentGame);
         
         // Ensure room is stored in memory after game start
         rooms.set(roomCode, room);
