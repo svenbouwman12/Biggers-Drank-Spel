@@ -230,6 +230,29 @@ app.get('/api/debug/db-room/:roomCode', async (req, res) => {
     }
 });
 
+// Debug current game state
+app.get('/api/debug/game-state/:roomCode', (req, res) => {
+    try {
+        const roomCode = req.params.roomCode;
+        const room = rooms.get(roomCode);
+        
+        if (!room) {
+            return res.status(404).json({ error: 'Room not found in memory' });
+        }
+        
+        res.json({
+            roomCode: roomCode,
+            gameState: room.gameState,
+            currentGame: room.currentGame,
+            players: Array.from(room.players.values()),
+            memoryRoom: room
+        });
+    } catch (error) {
+        console.error('❌ Debug game state error:', error);
+        res.status(500).json({ error: 'Failed to get game state' });
+    }
+});
+
 // Test database update directly (GET version for easier testing)
 app.get('/api/debug/test-update/:roomCode', async (req, res) => {
     try {
@@ -344,7 +367,18 @@ app.get('/api/room/:roomCode', async (req, res) => {
         };
         
         // Add current game state if game is active
+        console.log(`🎮 Memory room check:`, {
+            hasMemoryRoom: !!memoryRoom,
+            gameState: memoryRoom?.gameState,
+            hasCurrentGame: !!memoryRoom?.currentGame,
+            isActive: memoryRoom?.currentGame?.isActive
+        });
+        
         if (memoryRoom && memoryRoom.currentGame && memoryRoom.currentGame.isActive) {
+            const timeRemaining = memoryRoom.currentGame.phase === 'question' ? 
+                Math.max(0, 30000 - (Date.now() - memoryRoom.currentGame.roundStartTime)) : 
+                Math.max(0, 10000 - (Date.now() - memoryRoom.currentGame.roundStartTime));
+                
             roomResponse.currentGame = {
                 id: memoryRoom.currentGame.id,
                 type: memoryRoom.currentGame.type,
@@ -354,10 +388,13 @@ app.get('/api/room/:roomCode', async (req, res) => {
                 currentQuestion: memoryRoom.currentGame.currentQuestion,
                 phase: memoryRoom.currentGame.phase,
                 roundStartTime: memoryRoom.currentGame.roundStartTime,
-                timeRemaining: memoryRoom.currentGame.phase === 'question' ? 
-                    Math.max(0, 30000 - (Date.now() - memoryRoom.currentGame.roundStartTime)) : 
-                    Math.max(0, 10000 - (Date.now() - memoryRoom.currentGame.roundStartTime))
+                timeRemaining: timeRemaining,
+                isActive: true
             };
+            
+            console.log(`🎮 Added currentGame to response:`, roomResponse.currentGame);
+        } else {
+            console.log(`❌ No currentGame data available for room ${roomCode}`);
         }
         
         console.log(`📡 Returning room data:`, roomResponse);
