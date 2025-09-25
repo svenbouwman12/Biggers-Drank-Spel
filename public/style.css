@@ -1189,6 +1189,21 @@ body {
     padding-top: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     text-align: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Small button variant */
+.glass-button.small {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.glass-button.small .button-icon {
+    font-size: 1rem;
+    margin-right: 0.5rem;
 }
 
 /* Responsive Design */

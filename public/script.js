@@ -931,10 +931,12 @@ function updateLobbiesDisplay() {
     
     const noLobbiesState = document.getElementById('noLobbies');
     const lobbiesList = document.getElementById('lobbiesList');
+    const createLobbySmall = document.getElementById('createLobbySmall');
     
     console.log('📋 Elements found:', {
         noLobbiesState: !!noLobbiesState,
         lobbiesList: !!lobbiesList,
+        createLobbySmall: !!createLobbySmall,
         lobbiesCount: lobbiesData.length
     });
     
@@ -949,6 +951,10 @@ function updateLobbiesDisplay() {
             lobbiesList.classList.add('hidden');
             console.log('✅ Lobbies list hidden');
         }
+        if (createLobbySmall) {
+            createLobbySmall.style.display = 'none';
+            console.log('✅ Small create button hidden');
+        }
     } else {
         console.log(`📋 Showing ${lobbiesData.length} lobbies`);
         // Show lobbies list
@@ -960,6 +966,10 @@ function updateLobbiesDisplay() {
             lobbiesList.classList.remove('hidden');
             console.log('✅ Lobbies list shown');
             renderLobbies();
+        }
+        if (createLobbySmall) {
+            createLobbySmall.style.display = 'inline-flex';
+            console.log('✅ Small create button shown');
         }
     }
 }

@@ -158,11 +158,17 @@
                         <!-- Lobby items will be populated here -->
                     </div>
 
-                    <!-- Refresh Button -->
+                    <!-- Footer Actions -->
                     <div class="card-footer">
                         <button class="glass-button secondary" onclick="refreshLobbies()">
                             <span class="button-icon">🔄</span>
                             <span class="button-text">Vernieuw</span>
+                        </button>
+                        
+                        <!-- Small create lobby button when lobbies exist -->
+                        <button class="glass-button tertiary small" onclick="showHostForm()" id="createLobbySmall" style="display: none;">
+                            <span class="button-icon">➕</span>
+                            <span class="button-text">Maak Lobby</span>
                         </button>
                     </div>
                 </div>
