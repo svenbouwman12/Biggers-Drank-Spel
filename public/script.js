@@ -863,7 +863,7 @@ function startLobbyRefresh() {
     
     lobbyRefreshInterval = setInterval(() => {
         refreshLobbies();
-    }, 3000); // 3 seconds
+    }, 2000); // 2 seconds for more real-time updates
     
     console.log('🔄 Lobby auto-refresh started');
 }
@@ -880,6 +880,13 @@ function stopLobbyRefresh() {
 async function refreshLobbies() {
     try {
         console.log('🔄 Refreshing lobbies...');
+        
+        // Add visual refresh indicator
+        const refreshButton = document.querySelector('.glass-button.secondary');
+        if (refreshButton) {
+            refreshButton.style.opacity = '0.7';
+            refreshButton.querySelector('.button-icon').textContent = '⏳';
+        }
         
         const response = await fetch('/api/lobbies');
         
@@ -899,9 +906,22 @@ async function refreshLobbies() {
             showNotification(`Kon lobbies niet laden: ${data.error}`, 'error');
         }
         
+        // Reset refresh button
+        if (refreshButton) {
+            refreshButton.style.opacity = '1';
+            refreshButton.querySelector('.button-icon').textContent = '🔄';
+        }
+        
     } catch (error) {
         console.error('❌ Error refreshing lobbies:', error);
         showNotification(`Verbindingsfout: ${error.message}`, 'error');
+        
+        // Reset refresh button on error
+        const refreshButton = document.querySelector('.glass-button.secondary');
+        if (refreshButton) {
+            refreshButton.style.opacity = '1';
+            refreshButton.querySelector('.button-icon').textContent = '🔄';
+        }
     }
 }
 

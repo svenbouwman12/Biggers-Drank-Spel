@@ -868,6 +868,12 @@ app.post('/api/room/join', async (req, res) => {
                 score: 0
             }]);
 
+        // Update current_players count in rooms table
+        await supabase
+            .from('rooms')
+            .update({ current_players: room.players.size + 1 })
+            .eq('code', roomCode);
+
         // Add player to room
         const player = {
             id: 'api_' + Date.now(),
