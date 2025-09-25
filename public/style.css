@@ -1000,7 +1000,8 @@ body {
 }
 
 .lobby-code {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
     font-size: 1.5rem;
     color: #ff6b6b;
     text-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
@@ -1136,7 +1137,8 @@ body {
 }
 
 .empty-title {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
     font-size: 1.5rem;
     color: #fff;
     margin-bottom: 0.5rem;
@@ -1173,6 +1175,7 @@ body {
 .loading-text {
     color: rgba(255, 255, 255, 0.7);
     font-size: 0.9rem;
+    display: none; /* Hide loading text */
 }
 
 /* Card Footer */
