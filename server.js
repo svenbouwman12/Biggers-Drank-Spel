@@ -201,7 +201,7 @@ app.post('/api/room/create', async (req, res) => {
                 code: roomCode,
                 host_name: hostName,
                 host_id: 'api_' + Date.now(),
-                game_type: gameType || 'mixed',
+                game_type: gameType || 'simpleTest',
                 status: 'lobby',
                 max_players: 8,
                 current_players: 1,
@@ -217,7 +217,7 @@ app.post('/api/room/create', async (req, res) => {
             code: roomCode,
             host: hostId,
             hostName: hostName,
-            gameType: gameType || 'mixed',
+            gameType: gameType || 'simpleTest',
             players: new Map(),
             gameState: 'lobby',
             currentGame: null,
@@ -263,7 +263,7 @@ app.post('/api/room/create', async (req, res) => {
             room: {
                 code: roomCode,
                 hostName: hostName,
-                gameType: gameType,
+                gameType: gameType || 'simpleTest',
                 playerCount: 1,
                 players: Array.from(room.players.values())
             }
