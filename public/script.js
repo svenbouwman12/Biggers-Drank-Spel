@@ -827,8 +827,15 @@ function showLobbyBrowser() {
         console.log('👁️ Screen visibility:', {
             display: computedStyle.display,
             visibility: computedStyle.visibility,
-            opacity: computedStyle.opacity
+            opacity: computedStyle.opacity,
+            classes: lobbyScreen.className
         });
+        
+        // Force display if still hidden
+        if (computedStyle.display === 'none') {
+            console.log('🔧 Forcing display to block...');
+            lobbyScreen.style.display = 'block';
+        }
         
     } else {
         console.error('❌ Lobby browser screen not found!');

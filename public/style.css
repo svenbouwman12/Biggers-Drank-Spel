@@ -945,7 +945,10 @@ body {
    LOBBY BROWSER STYLES
    ============================================================================ */
 
-/* Lobby Browser Screen - inherits from .screen */
+/* Lobby Browser Screen - force display when active */
+#lobbyBrowserScreen.active {
+    display: block !important;
+}
 
 .lobby-browser-content {
     padding: 2rem;
