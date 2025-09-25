@@ -56,6 +56,11 @@ function initializeSocket() {
         // Connection events
         socket.on('connect', () => {
             console.log('🔌 Connected to server successfully');
+            // Clear the timeout since we're connected
+            if (window.socketTimeout) {
+                clearTimeout(window.socketTimeout);
+                window.socketTimeout = null;
+            }
             hideLoading();
         });
         
@@ -90,22 +95,28 @@ function initializeSocket() {
         socket.on('connect_error', (error) => {
             console.error('❌ Connection error:', error);
             showNotification('Socket.IO failed. Switching to API mode...', 'error');
+            // Clear the timeout since we're switching to API mode now
+            if (window.socketTimeout) {
+                clearTimeout(window.socketTimeout);
+                window.socketTimeout = null;
+            }
             // Immediately switch to API mode if Socket.IO fails
             setTimeout(() => {
                 if (!socket || !socket.connected) {
                     console.log('🔄 Switching to API mode due to connection failure');
                     initializeAPIFallback();
                 }
-            }, 2000);
+            }, 1000); // Reduced from 2 to 1 second
         });
         
-        // Add a timeout to hide loading if connection takes too long
-        setTimeout(() => {
+        // Add a timeout to switch to API mode if connection takes too long
+        window.socketTimeout = setTimeout(() => {
             if (!socket || !socket.connected) {
-                console.log('⏰ Connection timeout, hiding loading');
+                console.log('⏰ Connection timeout, switching to API mode');
                 hideLoading();
+                initializeAPIFallback();
             }
-        }, 5000);
+        }, 3000); // Reduced from 5 to 3 seconds
         
         // Room events
         socket.on('roomCreated', handleRoomCreated);
@@ -762,6 +773,20 @@ let pollingInterval = null;
 function initializeAPIFallback() {
     console.log('🔄 Initializing API fallback system');
     apiMode = true;
+    
+    // Completely disable socket connection attempts
+    if (socket) {
+        socket.disconnect();
+        socket.removeAllListeners();
+        socket = null;
+    }
+    
+    // Clear any pending Socket.IO timeouts
+    if (window.socketTimeout) {
+        clearTimeout(window.socketTimeout);
+        window.socketTimeout = null;
+    }
+    
     hideLoading();
     showNotification('Using API mode for better compatibility', 'info');
     
