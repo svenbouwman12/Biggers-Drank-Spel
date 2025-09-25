@@ -113,7 +113,7 @@
                 </div>
 
                 <div class="form-actions">
-                    <button class="glass-button secondary" onclick="browseLobbies()">
+                    <button class="glass-button secondary" onclick="showLobbyBrowser()">
                         <span class="button-icon">📋</span>
                         <span class="button-text">Bekijk Actieve Lobbies</span>
                     </button>
@@ -122,6 +122,48 @@
                 <div class="qr-section">
                     <p>Of scan QR code:</p>
                     <div id="qrCode" class="qr-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lobby Browser Screen -->
+        <div id="lobbyBrowserScreen" class="screen">
+            <div class="glass-container">
+                <div class="form-header">
+                    <button class="back-button" onclick="showJoinForm()">←</button>
+                    <h2>📋 Actieve Lobbies</h2>
+                </div>
+
+                <div class="lobby-browser-content">
+                    <!-- Loading State -->
+                    <div id="lobbiesLoading" class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">Lobbies laden...</p>
+                    </div>
+
+                    <!-- No Lobbies State -->
+                    <div id="noLobbies" class="empty-state hidden">
+                        <div class="empty-icon">🎯</div>
+                        <h3 class="empty-title">Geen actieve lobbies</h3>
+                        <p class="empty-text">Er zijn momenteel geen lobbies beschikbaar. Maak zelf een lobby aan!</p>
+                        <button class="glass-button primary" onclick="showHostForm()">
+                            <span class="button-icon">➕</span>
+                            <span class="button-text">Maak Lobby</span>
+                        </button>
+                    </div>
+
+                    <!-- Lobbies List -->
+                    <div id="lobbiesList" class="lobbies-list hidden">
+                        <!-- Lobby items will be populated here -->
+                    </div>
+
+                    <!-- Refresh Button -->
+                    <div class="card-footer">
+                        <button class="glass-button secondary" onclick="refreshLobbies()">
+                            <span class="button-icon">🔄</span>
+                            <span class="button-text">Vernieuw</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

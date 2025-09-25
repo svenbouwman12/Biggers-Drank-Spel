@@ -765,6 +765,9 @@ function showScreen(screenId) {
 
 function showHome() {
     showScreen('homeScreen');
+    
+    // Stop lobby refresh when going home
+    stopLobbyRefresh();
 }
 
 function showHostForm() {
@@ -773,6 +776,9 @@ function showHostForm() {
 
 function showJoinForm() {
     showScreen('joinForm');
+    
+    // Stop lobby refresh when leaving lobby browser
+    stopLobbyRefresh();
 }
 
 function nextRound() {
@@ -793,9 +799,206 @@ function backToLobby() {
     }
 }
 
-function browseLobbies() {
-    console.log('📋 Opening lobby browser');
-    window.open('lobbies.html', '_blank');
+// Global variables for lobby browser
+let lobbiesData = [];
+let lobbyRefreshInterval = null;
+
+function showLobbyBrowser() {
+    console.log('📋 Showing lobby browser');
+    hideAllScreens();
+    document.getElementById('lobbyBrowserScreen').classList.add('active');
+    
+    // Start auto-refresh
+    startLobbyRefresh();
+    
+    // Load initial lobbies
+    refreshLobbies();
+}
+
+function startLobbyRefresh() {
+    if (lobbyRefreshInterval) {
+        clearInterval(lobbyRefreshInterval);
+    }
+    
+    lobbyRefreshInterval = setInterval(() => {
+        refreshLobbies();
+    }, 3000); // 3 seconds
+    
+    console.log('🔄 Lobby auto-refresh started');
+}
+
+function stopLobbyRefresh() {
+    if (lobbyRefreshInterval) {
+        clearInterval(lobbyRefreshInterval);
+        lobbyRefreshInterval = null;
+        console.log('⏹️ Lobby auto-refresh stopped');
+    }
+}
+
+// Refresh lobbies from server
+async function refreshLobbies() {
+    try {
+        console.log('🔄 Refreshing lobbies...');
+        
+        const response = await fetch('/api/lobbies');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('📡 Lobbies API response:', data);
+        
+        if (data.success) {
+            lobbiesData = data.lobbies || [];
+            updateLobbiesDisplay();
+            console.log(`📋 Loaded ${data.count} lobbies`);
+        } else {
+            console.error('❌ Failed to load lobbies:', data.error);
+            showNotification(`Kon lobbies niet laden: ${data.error}`, 'error');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error refreshing lobbies:', error);
+        showNotification(`Verbindingsfout: ${error.message}`, 'error');
+    }
+}
+
+// Update the lobbies display
+function updateLobbiesDisplay() {
+    const loadingState = document.getElementById('lobbiesLoading');
+    const noLobbiesState = document.getElementById('noLobbies');
+    const lobbiesList = document.getElementById('lobbiesList');
+    
+    // Hide loading state
+    if (loadingState) loadingState.classList.add('hidden');
+    
+    if (lobbiesData.length === 0) {
+        // Show no lobbies state
+        if (noLobbiesState) noLobbiesState.classList.remove('hidden');
+        if (lobbiesList) lobbiesList.classList.add('hidden');
+    } else {
+        // Show lobbies list
+        if (noLobbiesState) noLobbiesState.classList.add('hidden');
+        if (lobbiesList) {
+            lobbiesList.classList.remove('hidden');
+            renderLobbies();
+        }
+    }
+}
+
+// Render the lobbies list
+function renderLobbies() {
+    const lobbiesList = document.getElementById('lobbiesList');
+    if (!lobbiesList) return;
+    
+    lobbiesList.innerHTML = lobbiesData.map(lobby => {
+        const statusIcon = lobby.status === 'playing' ? '🎮' : '⏳';
+        const statusText = lobby.status === 'playing' ? 'Spel bezig' : 'Wachten';
+        const timeAgo = getTimeAgo(lobby.createdAt);
+        
+        return `
+            <div class="lobby-item ${!lobby.canJoin ? 'disabled' : ''}" 
+                 onclick="${lobby.canJoin ? `selectLobby('${lobby.code}')` : ''}">
+                <div class="lobby-header">
+                    <div class="lobby-code">${lobby.code}</div>
+                    <div class="lobby-status ${lobby.status}">
+                        <span class="status-icon">${statusIcon}</span>
+                        <span class="status-text">${statusText}</span>
+                    </div>
+                </div>
+                
+                <div class="lobby-info">
+                    <div class="lobby-host">
+                        <span class="host-label">Host:</span>
+                        <span class="host-name">${lobby.hostName}</span>
+                    </div>
+                    
+                    <div class="lobby-game">
+                        <span class="game-label">Game:</span>
+                        <span class="game-type">${getGameTypeDisplay(lobby.gameType)}</span>
+                    </div>
+                </div>
+                
+                <div class="lobby-players">
+                    <div class="players-count">
+                        <span class="players-icon">👥</span>
+                        <span class="players-text">${lobby.currentPlayers}/${lobby.maxPlayers}</span>
+                    </div>
+                    
+                    <div class="players-list">
+                        ${lobby.players.map(player => `
+                            <span class="player-avatar">${player.avatar}</span>
+                        `).join('')}
+                        ${Array.from({length: lobby.maxPlayers - lobby.currentPlayers}, () => 
+                            '<span class="player-avatar empty">➕</span>'
+                        ).join('')}
+                    </div>
+                </div>
+                
+                <div class="lobby-meta">
+                    <span class="lobby-time">${timeAgo}</span>
+                    ${lobby.canJoin ? '<span class="join-hint">Klik om te joinen</span>' : '<span class="join-hint disabled">Vol of gestart</span>'}
+                </div>
+                
+                ${lobby.canJoin ? `
+                    <div class="lobby-actions">
+                        <button class="glass-button primary small" onclick="event.stopPropagation(); selectLobby('${lobby.code}')">
+                            <span class="button-icon">🚀</span>
+                            <span class="button-text">Join</span>
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+// Select a lobby and show join form
+function selectLobby(roomCode) {
+    console.log(`🎯 Selected lobby: ${roomCode}`);
+    
+    // Pre-fill room code in join form
+    const roomCodeInput = document.getElementById('roomCode');
+    if (roomCodeInput) {
+        roomCodeInput.value = roomCode;
+    }
+    
+    // Go back to join form
+    showJoinForm();
+    
+    showNotification(`Lobby ${roomCode} geselecteerd!`, 'success');
+}
+
+// Utility functions for lobby browser
+function getTimeAgo(timestamp) {
+    const now = new Date();
+    const created = new Date(timestamp);
+    const diffMs = now - created;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Net aangemaakt';
+    if (diffMins < 60) return `${diffMins} min geleden`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} uur geleden`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} dag${diffDays > 1 ? 'en' : ''} geleden`;
+}
+
+function getGameTypeDisplay(gameType) {
+    const gameTypes = {
+        'balletjeBalletje': '🎯 Balletje Balletje',
+        'mixed': '🎮 Mixed Games',
+        'mostLikelyTo': '🎭 Most Likely To',
+        'truthOrDrink': '🍺 Truth or Drink',
+        'speedTap': '⚡ Speed Tap',
+        'quiz': '🧠 Quiz',
+        'simpleTest': '🧪 Test Game'
+    };
+    
+    return gameTypes[gameType] || '🎮 Unknown Game';
 }
 
 function showLoading(message = 'Loading...') {
