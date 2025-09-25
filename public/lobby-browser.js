@@ -76,21 +76,43 @@ async function refreshLobbies() {
     try {
         console.log('🔄 Refreshing lobbies...');
         
+        // First test the API
+        try {
+            const testResponse = await fetch('/api/lobbies/test');
+            const testData = await testResponse.json();
+            console.log('🧪 API test result:', testData);
+        } catch (testError) {
+            console.error('❌ API test failed:', testError);
+            showNotification('API niet bereikbaar', 'error');
+            return;
+        }
+        
         const response = await fetch('/api/lobbies');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
+        console.log('📡 Lobbies API response:', data);
         
         if (data.success) {
-            lobbiesData = data.lobbies;
+            lobbiesData = data.lobbies || [];
             updateLobbiesDisplay();
             console.log(`📋 Loaded ${data.count} lobbies`);
         } else {
             console.error('❌ Failed to load lobbies:', data.error);
-            showNotification('Kon lobbies niet laden', 'error');
+            showNotification(`Kon lobbies niet laden: ${data.error}`, 'error');
+            
+            // Show error details if available
+            if (data.details) {
+                console.error('Error details:', data.details);
+            }
         }
         
     } catch (error) {
         console.error('❌ Error refreshing lobbies:', error);
-        showNotification('Verbindingsfout bij laden lobbies', 'error');
+        showNotification(`Verbindingsfout: ${error.message}`, 'error');
     }
 }
 

@@ -1184,10 +1184,43 @@ app.get('/api/qr/:roomCode', async (req, res) => {
     }
 });
 
+// Test endpoint for debugging
+app.get('/api/lobbies/test', async (req, res) => {
+    try {
+        console.log('🧪 Testing lobby API...');
+        
+        // Simple test - just return some data
+        res.json({ 
+            success: true, 
+            message: 'API is working',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Test error:', error);
+        res.status(500).json({ error: 'Test failed' });
+    }
+});
+
 // Get all active lobbies
 app.get('/api/lobbies', async (req, res) => {
     try {
         console.log('📋 Fetching active lobbies...');
+        
+        // First test database connection
+        const { data: testData, error: testError } = await supabase
+            .from('rooms')
+            .select('code')
+            .limit(1);
+
+        if (testError) {
+            console.error('❌ Database connection test failed:', testError);
+            return res.status(500).json({ 
+                error: 'Database connection failed', 
+                details: testError.message 
+            });
+        }
+
+        console.log('✅ Database connection test passed');
         
         // Get all rooms from database where status is 'lobby' or 'playing'
         const { data: roomsData, error } = await supabase
@@ -1207,33 +1240,55 @@ app.get('/api/lobbies', async (req, res) => {
 
         if (error) {
             console.error('❌ Error fetching lobbies:', error);
-            return res.status(500).json({ error: 'Failed to fetch lobbies' });
+            return res.status(500).json({ 
+                error: 'Failed to fetch lobbies', 
+                details: error.message 
+            });
         }
+
+        console.log(`📋 Found ${roomsData?.length || 0} rooms in database`);
 
         // Get player count for each room
         const lobbiesWithPlayers = await Promise.all(
-            roomsData.map(async (room) => {
-                const { data: playersData } = await supabase
-                    .from('players')
-                    .select('name, avatar')
-                    .eq('room_id', room.code);
+            (roomsData || []).map(async (room) => {
+                try {
+                    // Get players for this room by room code (since we don't have room ID)
+                    const { data: playersData } = await supabase
+                        .from('players')
+                        .select('player_name, avatar')
+                        .eq('room_id', room.code);
 
-                return {
-                    code: room.code,
-                    hostName: room.host_name,
-                    gameType: room.game_type,
-                    status: room.status,
-                    currentPlayers: playersData?.length || 0,
-                    maxPlayers: room.max_players || 8,
-                    players: playersData || [],
-                    createdAt: room.created_at,
-                    startedAt: room.started_at,
-                    canJoin: room.status === 'lobby' && (playersData?.length || 0) < (room.max_players || 8)
-                };
+                    return {
+                        code: room.code,
+                        hostName: room.host_name,
+                        gameType: room.game_type,
+                        status: room.status,
+                        currentPlayers: playersData?.length || 0,
+                        maxPlayers: room.max_players || 8,
+                        players: playersData || [],
+                        createdAt: room.created_at,
+                        startedAt: room.started_at,
+                        canJoin: room.status === 'lobby' && (playersData?.length || 0) < (room.max_players || 8)
+                    };
+                } catch (playerError) {
+                    console.error(`❌ Error fetching players for room ${room.code}:`, playerError);
+                    return {
+                        code: room.code,
+                        hostName: room.host_name,
+                        gameType: room.game_type,
+                        status: room.status,
+                        currentPlayers: 0,
+                        maxPlayers: room.max_players || 8,
+                        players: [],
+                        createdAt: room.created_at,
+                        startedAt: room.started_at,
+                        canJoin: room.status === 'lobby'
+                    };
+                }
             })
         );
 
-        console.log(`📋 Found ${lobbiesWithPlayers.length} active lobbies`);
+        console.log(`📋 Returning ${lobbiesWithPlayers.length} lobbies`);
         res.json({ 
             success: true, 
             lobbies: lobbiesWithPlayers,
@@ -1242,7 +1297,11 @@ app.get('/api/lobbies', async (req, res) => {
 
     } catch (error) {
         console.error('❌ Error in /api/lobbies:', error);
-        res.status(500).json({ error: 'Failed to fetch lobbies' });
+        res.status(500).json({ 
+            error: 'Failed to fetch lobbies',
+            details: error.message,
+            stack: error.stack
+        });
     }
 });
 
