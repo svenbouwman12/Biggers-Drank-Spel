@@ -860,9 +860,10 @@ app.post('/api/room/create', async (req, res) => {
         });
 
         // Create room in memory
+        const hostId = 'api_' + Date.now();
         const room = {
             code: roomCode,
-            host: 'api_' + Date.now(),
+            host: hostId,
             hostName: hostName,
             gameType: gameType || 'mixed',
             players: new Map(),
@@ -876,7 +877,20 @@ app.post('/api/room/create', async (req, res) => {
             }
         };
         
+        // Add host as first player
+        const hostPlayer = {
+            id: hostId,
+            name: hostName,
+            avatar: `avatar_${Math.floor(Math.random() * 8) + 1}`,
+            isHost: true,
+            score: 0,
+            joinedAt: new Date().toISOString()
+        };
+        
+        room.players.set(hostId, hostPlayer);
         rooms.set(roomCode, room);
+        
+        console.log(`🏠 Room created via API: ${roomCode} by ${hostName}`);
         
         res.json({
             roomCode: roomCode,
@@ -884,8 +898,8 @@ app.post('/api/room/create', async (req, res) => {
                 code: roomCode,
                 hostName: hostName,
                 gameType: gameType,
-                playerCount: 0,
-                players: []
+                playerCount: 1,
+                players: Array.from(room.players.values())
             }
         });
     } catch (error) {
