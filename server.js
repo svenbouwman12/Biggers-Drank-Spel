@@ -182,8 +182,8 @@ app.get('/api/debug/db-room/:roomCode', async (req, res) => {
     }
 });
 
-// Test database update directly
-app.post('/api/debug/test-update/:roomCode', async (req, res) => {
+// Test database update directly (GET version for easier testing)
+app.get('/api/debug/test-update/:roomCode', async (req, res) => {
     try {
         const roomCode = req.params.roomCode;
         
