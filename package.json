@@ -12,17 +12,17 @@
   "keywords": [
     "drankspel",
     "multiplayer",
-    "socket.io",
     "node.js",
     "party-game",
     "lobby",
-    "mini-games"
+    "mini-games",
+    "api",
+    "polling"
   ],
   "author": "Rene van der Werff",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
-    "socket.io": "^4.7.2",
     "qrcode": "^1.5.3",
     "cors": "^2.8.5",
     "@supabase/supabase-js": "^2.38.0"
