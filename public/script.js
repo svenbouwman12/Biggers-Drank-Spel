@@ -812,7 +812,15 @@ function hideAllScreens() {
 function showLobbyBrowser() {
     console.log('📋 Showing lobby browser');
     hideAllScreens();
-    document.getElementById('lobbyBrowserScreen').classList.add('active');
+    
+    const lobbyScreen = document.getElementById('lobbyBrowserScreen');
+    if (lobbyScreen) {
+        lobbyScreen.classList.add('active');
+        console.log('✅ Lobby browser screen activated');
+    } else {
+        console.error('❌ Lobby browser screen not found!');
+        return;
+    }
     
     // Start auto-refresh
     startLobbyRefresh();
@@ -872,22 +880,46 @@ async function refreshLobbies() {
 
 // Update the lobbies display
 function updateLobbiesDisplay() {
+    console.log('🔄 Updating lobbies display...');
+    
     const loadingState = document.getElementById('lobbiesLoading');
     const noLobbiesState = document.getElementById('noLobbies');
     const lobbiesList = document.getElementById('lobbiesList');
     
+    console.log('📋 Elements found:', {
+        loadingState: !!loadingState,
+        noLobbiesState: !!noLobbiesState,
+        lobbiesList: !!lobbiesList,
+        lobbiesCount: lobbiesData.length
+    });
+    
     // Hide loading state
-    if (loadingState) loadingState.classList.add('hidden');
+    if (loadingState) {
+        loadingState.classList.add('hidden');
+        console.log('✅ Loading state hidden');
+    }
     
     if (lobbiesData.length === 0) {
+        console.log('📋 No lobbies - showing empty state');
         // Show no lobbies state
-        if (noLobbiesState) noLobbiesState.classList.remove('hidden');
-        if (lobbiesList) lobbiesList.classList.add('hidden');
+        if (noLobbiesState) {
+            noLobbiesState.classList.remove('hidden');
+            console.log('✅ Empty state shown');
+        }
+        if (lobbiesList) {
+            lobbiesList.classList.add('hidden');
+            console.log('✅ Lobbies list hidden');
+        }
     } else {
+        console.log(`📋 Showing ${lobbiesData.length} lobbies`);
         // Show lobbies list
-        if (noLobbiesState) noLobbiesState.classList.add('hidden');
+        if (noLobbiesState) {
+            noLobbiesState.classList.add('hidden');
+            console.log('✅ Empty state hidden');
+        }
         if (lobbiesList) {
             lobbiesList.classList.remove('hidden');
+            console.log('✅ Lobbies list shown');
             renderLobbies();
         }
     }
@@ -896,7 +928,12 @@ function updateLobbiesDisplay() {
 // Render the lobbies list
 function renderLobbies() {
     const lobbiesList = document.getElementById('lobbiesList');
-    if (!lobbiesList) return;
+    if (!lobbiesList) {
+        console.error('❌ Lobbies list element not found!');
+        return;
+    }
+    
+    console.log(`🎨 Rendering ${lobbiesData.length} lobbies...`);
     
     lobbiesList.innerHTML = lobbiesData.map(lobby => {
         const statusIcon = lobby.status === 'playing' ? '🎮' : '⏳';
@@ -958,6 +995,8 @@ function renderLobbies() {
             </div>
         `;
     }).join('');
+    
+    console.log('✅ Lobbies rendered successfully');
 }
 
 // Select a lobby and show join form
