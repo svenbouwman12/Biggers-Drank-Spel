@@ -553,20 +553,52 @@ app.post('/api/game/start', async (req, res) => {
         }
         
         // Update room status in database
-        const { error: updateError } = await supabase
+        console.log(`🔄 Attempting to update room ${roomCode} status to 'playing'...`);
+        console.log(`📝 Update data:`, { 
+            status: 'playing',
+            started_at: new Date().toISOString(),
+            game_type: gameType || 'simpleTest'
+        });
+        
+        const { data: updateData, error: updateError } = await supabase
             .from('rooms')
             .update({ 
                 status: 'playing',
                 started_at: new Date().toISOString(),
                 game_type: gameType || 'simpleTest'
             })
-            .eq('code', roomCode);
+            .eq('code', roomCode)
+            .select();
             
         if (updateError) {
             console.error('❌ Error updating room status:', updateError);
-            return res.status(500).json({ error: 'Failed to update room status' });
-        }
+            console.error('❌ Update error details:', updateError.message, updateError.details, updateError.hint);
             
+            // Try fallback: update only status without game_type
+            console.log(`🔄 Trying fallback: update only status to 'playing'...`);
+            const { data: fallbackData, error: fallbackError } = await supabase
+                .from('rooms')
+                .update({ 
+                    status: 'playing',
+                    started_at: new Date().toISOString()
+                })
+                .eq('code', roomCode)
+                .select();
+                
+            if (fallbackError) {
+                console.error('❌ Fallback update also failed:', fallbackError);
+                return res.status(500).json({ 
+                    error: 'Failed to update room status',
+                    details: updateError.message,
+                    hint: updateError.hint,
+                    fallbackError: fallbackError.message
+                });
+            }
+            
+            console.log(`✅ Fallback update successful:`, fallbackData);
+        }
+        
+        console.log(`✅ Database update result:`, updateData);
         console.log(`🔄 Updated room ${roomCode} status to 'playing' in database`);
 
         // Verify the database update was successful
