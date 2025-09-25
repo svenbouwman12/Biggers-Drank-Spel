@@ -103,6 +103,56 @@ app.get('/api/test-room-code', (req, res) => {
     });
 });
 
+// Debug endpoint to check database
+app.get('/api/debug/rooms', async (req, res) => {
+    try {
+        const { data: rooms, error } = await supabase
+            .from('rooms')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(10);
+            
+        if (error) {
+            console.error('❌ Database error:', error);
+            return res.status(500).json({ error: error.message });
+        }
+        
+        res.json({
+            rooms: rooms,
+            count: rooms.length,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Debug error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Debug endpoint to check players
+app.get('/api/debug/players', async (req, res) => {
+    try {
+        const { data: players, error } = await supabase
+            .from('players')
+            .select('*')
+            .order('joined_at', { ascending: false })
+            .limit(20);
+            
+        if (error) {
+            console.error('❌ Database error:', error);
+            return res.status(500).json({ error: error.message });
+        }
+        
+        res.json({
+            players: players,
+            count: players.length,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Debug error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get room info - Database first approach
 app.get('/api/room/:roomCode', async (req, res) => {
     const roomCode = req.params.roomCode;
@@ -173,7 +223,7 @@ app.post('/api/room/create', async (req, res) => {
         const hostId = 'api_' + Date.now();
         
         // Create room in database
-        await supabase
+        const { error: roomError } = await supabase
             .from('rooms')
             .insert([{
                 code: roomCode,
@@ -188,6 +238,13 @@ app.post('/api/room/create', async (req, res) => {
                     categories: ['spicy', 'funny', 'sport', 'movie']
                 }
             }]);
+            
+        if (roomError) {
+            console.error('❌ Error creating room in database:', roomError);
+            return res.status(500).json({ error: 'Failed to create room in database' });
+        }
+        
+        console.log(`✅ Room ${roomCode} created in database successfully`);
 
         // Create room in memory
         const room = {
@@ -218,7 +275,7 @@ app.post('/api/room/create', async (req, res) => {
         };
         
         // Add host to database (using room code as room_id for now)
-        await supabase
+        const { error: playerError } = await supabase
             .from('players')
             .insert([{
                 room_id: roomCode,
@@ -229,6 +286,13 @@ app.post('/api/room/create', async (req, res) => {
                 score: 0,
                 joined_at: new Date().toISOString()
             }]);
+            
+        if (playerError) {
+            console.error('❌ Error adding host player to database:', playerError);
+            return res.status(500).json({ error: 'Failed to add host player to database' });
+        }
+        
+        console.log(`✅ Host player added to database successfully`);
         
         room.players.set(hostId, hostPlayer);
         rooms.set(roomCode, room);
