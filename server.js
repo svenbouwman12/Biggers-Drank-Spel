@@ -372,7 +372,7 @@ app.post('/api/debug/force-game-start/:roomCode', async (req, res) => {
             .update({ 
                 status: 'playing',
                 started_at: new Date().toISOString(),
-                game_type: 'simpleTest',
+                game_type: 'balletjeBalletje',
                 settings: JSON.stringify({
                     categories: ['spicy', 'funny', 'sport', 'movie'],
                     gameDuration: 30,
@@ -926,7 +926,7 @@ app.post('/api/game/start', async (req, res) => {
         console.log(`📝 Update data:`, { 
             status: 'playing',
             started_at: new Date().toISOString(),
-            game_type: gameType || 'simpleTest',
+            game_type: gameType || 'balletjeBalletje',
             settings: JSON.stringify({
                 ...room.settings,
                 currentGame: gameStateData
@@ -938,7 +938,7 @@ app.post('/api/game/start', async (req, res) => {
             .update({ 
                 status: 'playing',
                 started_at: new Date().toISOString(),
-                game_type: gameType || 'simpleTest',
+                game_type: gameType || 'balletjeBalletje',
                 settings: JSON.stringify({
                     ...room.settings,
                     currentGame: gameStateData
@@ -957,7 +957,8 @@ app.post('/api/game/start', async (req, res) => {
                 .from('rooms')
                 .update({ 
                     status: 'playing',
-                    started_at: new Date().toISOString()
+                    started_at: new Date().toISOString(),
+                    game_type: 'balletjeBalletje'
                 })
                 .eq('code', roomCode)
                 .select();
