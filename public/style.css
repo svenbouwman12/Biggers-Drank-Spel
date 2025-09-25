@@ -86,14 +86,14 @@ body {
 
 /* Screen Management */
 .screen {
-    display: none;
+    display: none !important;
     width: 100%;
     max-width: 500px;
     margin: 0 auto;
 }
 
 .screen.active {
-    display: block;
+    display: block !important;
     animation: slideIn 0.5s ease-out;
 }
 
@@ -954,6 +954,11 @@ body {
 /* Lobby Browser Screen - force display when active */
 #lobbyBrowserScreen.active {
     display: block !important;
+}
+
+/* Ensure only one screen is visible at a time */
+.screen:not(.active) {
+    display: none !important;
 }
 
 .lobby-browser-content {

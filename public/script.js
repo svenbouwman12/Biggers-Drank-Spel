@@ -747,15 +747,18 @@ function updateLobby(data) {
 // ============================================================================
 
 function showScreen(screenId) {
+    // First hide all screens using both methods for maximum compatibility
     const screens = document.querySelectorAll('.screen');
     screens.forEach(screen => {
         if (screen) {
+            screen.classList.remove('active');
             screen.style.display = 'none';
         }
     });
     
     const targetScreen = document.getElementById(screenId);
     if (targetScreen) {
+        targetScreen.classList.add('active');
         targetScreen.style.display = 'block';
         console.log(`📱 Switching to screen: ${screenId}`);
     } else {
@@ -806,7 +809,11 @@ let lobbyRefreshInterval = null;
 // Hide all screens
 function hideAllScreens() {
     const screens = document.querySelectorAll('.screen');
-    screens.forEach(screen => screen.classList.remove('active'));
+    screens.forEach(screen => {
+        screen.classList.remove('active');
+        // Force hide with inline style as backup
+        screen.style.display = 'none';
+    });
 }
 
 function showLobbyBrowser() {
