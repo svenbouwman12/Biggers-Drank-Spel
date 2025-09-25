@@ -82,10 +82,14 @@ body {
 
 /* Game grid */
 .game-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 30px;
+    display: flex;
+    justify-content: center;
     margin: 40px 0;
+}
+
+.game-grid .game-card {
+    max-width: 400px;
+    width: 100%;
 }
 
 .game-card {

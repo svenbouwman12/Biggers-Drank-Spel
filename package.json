@@ -1,7 +1,7 @@
 {
   "name": "drankspel-party",
   "version": "2.0.0",
-  "description": "Een moderne multiplayer drankspel applicatie met paardenrace, mexico en bussen spellen",
+  "description": "Een moderne multiplayer drankspel applicatie met paardenrace spel",
   "main": "index.html",
   "scripts": {
     "start": "python -m http.server 8000",
@@ -14,8 +14,6 @@
     "drinking-game",
     "multiplayer",
     "paardenrace",
-    "mexico",
-    "bussen",
     "party-game",
     "supabase",
     "javascript"

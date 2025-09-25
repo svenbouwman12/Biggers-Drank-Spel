@@ -92,10 +92,8 @@ function startGame(gameType) {
     
     if (gameType === 'paardenrace') {
         startPaardenrace();
-    } else if (gameType === 'mexico') {
-        alert('Mexico game komt binnenkort!');
-    } else if (gameType === 'bussen') {
-        alert('Bussen game komt binnenkort!');
+    } else {
+        console.log('Unknown game type:', gameType);
     }
 }
 
