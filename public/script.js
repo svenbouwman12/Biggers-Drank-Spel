@@ -778,8 +778,9 @@ function showScreen(screenId) {
 function showHome() {
     showScreen('homeScreen');
     
-    // Stop lobby refresh when going home
+    // Stop lobby refresh and cleanup when going home
     stopLobbyRefresh();
+    stopCleanupInterval();
 }
 
 function showHostForm() {
@@ -789,8 +790,9 @@ function showHostForm() {
 function showJoinForm() {
     showScreen('joinForm');
     
-    // Stop lobby refresh when leaving lobby browser
+    // Stop lobby refresh and cleanup when leaving lobby browser
     stopLobbyRefresh();
+    stopCleanupInterval();
 }
 
 function nextRound() {
@@ -862,6 +864,9 @@ function showLobbyBrowser() {
     // Start auto-refresh
     startLobbyRefresh();
     
+    // Start periodic cleanup
+    startCleanupInterval();
+    
     // Load initial lobbies
     refreshLobbies();
 }
@@ -878,11 +883,44 @@ function startLobbyRefresh() {
     console.log('🔄 Lobby auto-refresh started');
 }
 
+// Start periodic cleanup of empty rooms
+function startCleanupInterval() {
+    if (window.cleanupInterval) {
+        clearInterval(window.cleanupInterval);
+    }
+    
+    // Cleanup every 30 seconds
+    window.cleanupInterval = setInterval(async () => {
+        try {
+            console.log('🧹 Periodic cleanup of empty rooms...');
+            await fetch('/api/cleanup/empty-rooms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log('✅ Periodic cleanup completed');
+        } catch (error) {
+            console.log('⚠️ Periodic cleanup failed:', error);
+        }
+    }, 30000); // 30 seconds
+    
+    console.log('🧹 Periodic cleanup started (every 30 seconds)');
+}
+
 function stopLobbyRefresh() {
     if (lobbyRefreshInterval) {
         clearInterval(lobbyRefreshInterval);
         lobbyRefreshInterval = null;
         console.log('⏹️ Lobby auto-refresh stopped');
+    }
+}
+
+function stopCleanupInterval() {
+    if (window.cleanupInterval) {
+        clearInterval(window.cleanupInterval);
+        window.cleanupInterval = null;
+        console.log('⏹️ Periodic cleanup stopped');
     }
 }
 
@@ -1238,6 +1276,20 @@ async function leaveLobby() {
         
         // Stop polling
         stopPolling();
+        
+        // Trigger cleanup of empty rooms
+        try {
+            console.log('🧹 Triggering cleanup of empty rooms...');
+            await fetch('/api/cleanup/empty-rooms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log('✅ Cleanup triggered successfully');
+        } catch (cleanupError) {
+            console.log('⚠️ Cleanup failed, but leave was successful:', cleanupError);
+        }
         
         // Show success message
         showNotification('Lobby verlaten!', 'success');

@@ -1273,48 +1273,64 @@ app.post('/api/room/leave', async (req, res) => {
     }
 });
 
-// Cleanup empty rooms endpoint
+// Cleanup empty rooms endpoint - Improved version
 app.post('/api/cleanup/empty-rooms', async (req, res) => {
     try {
         console.log('🧹 Starting cleanup of empty rooms...');
         
-        // Get all rooms with 0 players
-        const { data: emptyRooms, error } = await supabase
+        // Get all rooms and check which ones have no active players
+        const { data: allRooms, error } = await supabase
             .from('rooms')
-            .select('code, id')
-            .eq('current_players', 0);
+            .select('code, id');
             
         if (error) {
-            console.error('❌ Error fetching empty rooms:', error);
-            return res.status(500).json({ error: 'Failed to fetch empty rooms' });
+            console.error('❌ Error fetching rooms:', error);
+            return res.status(500).json({ error: 'Failed to fetch rooms' });
         }
         
         let deletedCount = 0;
         
-        for (const room of emptyRooms || []) {
+        for (const room of allRooms || []) {
             try {
-                console.log(`🗑️ Deleting empty room: ${room.code}`);
-                
-                // Delete all players first
-                await supabase
+                // Count active players for this room
+                const { data: activePlayers, error: countError } = await supabase
                     .from('players')
-                    .delete()
-                    .eq('room_id', room.code);
+                    .select('id')
+                    .eq('room_id', room.code)
+                    .is('left_at', null);
                 
-                // Delete the room
-                await supabase
-                    .from('rooms')
-                    .delete()
-                    .eq('code', room.code);
+                if (countError) {
+                    console.error(`❌ Error counting players for room ${room.code}:`, countError);
+                    continue;
+                }
+                
+                const playerCount = activePlayers?.length || 0;
+                
+                // If no active players, delete the room
+                if (playerCount === 0) {
+                    console.log(`🗑️ Deleting empty room: ${room.code}`);
                     
-                // Remove from memory
-                rooms.delete(room.code);
-                
-                deletedCount++;
-                console.log(`✅ Deleted empty room: ${room.code}`);
+                    // Delete all players first (including left ones)
+                    await supabase
+                        .from('players')
+                        .delete()
+                        .eq('room_id', room.code);
+                    
+                    // Delete the room
+                    await supabase
+                        .from('rooms')
+                        .delete()
+                        .eq('code', room.code);
+                        
+                    // Remove from memory
+                    rooms.delete(room.code);
+                    
+                    deletedCount++;
+                    console.log(`✅ Deleted empty room: ${room.code}`);
+                }
                 
             } catch (deleteError) {
-                console.error(`❌ Error deleting room ${room.code}:`, deleteError);
+                console.error(`❌ Error processing room ${room.code}:`, deleteError);
             }
         }
         
