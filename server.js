@@ -145,23 +145,87 @@ app.get('/api/test-room-code', (req, res) => {
 });
 
 // Get room info
-app.get('/api/room/:roomCode', (req, res) => {
+app.get('/api/room/:roomCode', async (req, res) => {
     const roomCode = req.params.roomCode;
-    const room = rooms.get(roomCode);
     
-    if (!room) {
-        return res.status(404).json({ error: 'Room not found' });
+    try {
+        // Try to get from memory first
+        let room = rooms.get(roomCode);
+        
+        // If not in memory, try to get from database and recreate in memory
+        if (!room) {
+            console.log(`🔄 Room ${roomCode} not in memory, checking database...`);
+            
+            const { data: roomData, error: roomError } = await supabase
+                .from('rooms')
+                .select('*')
+                .eq('code', roomCode)
+                .single();
+                
+            if (roomError || !roomData) {
+                return res.status(404).json({ error: 'Room not found' });
+            }
+            
+            // Get players from database
+            const { data: playersData, error: playersError } = await supabase
+                .from('players')
+                .select('*')
+                .eq('room_id', roomData.id)
+                .is('left_at', null);
+                
+            if (playersError) {
+                console.error('❌ Error fetching players:', playersError);
+                return res.status(500).json({ error: 'Failed to fetch players' });
+            }
+            
+            // Recreate room in memory
+            room = {
+                code: roomCode,
+                host: roomData.host_id,
+                hostName: roomData.host_name,
+                gameType: roomData.game_type,
+                players: new Map(),
+                gameState: roomData.status,
+                currentGame: null,
+                scores: new Map(),
+                settings: roomData.settings || {
+                    maxPlayers: 8,
+                    gameDuration: 30,
+                    categories: ['spicy', 'funny', 'sport', 'movie']
+                }
+            };
+            
+            // Add players to room
+            playersData.forEach(playerData => {
+                const player = {
+                    id: playerData.socket_id,
+                    name: playerData.player_name,
+                    avatar: playerData.avatar,
+                    isHost: playerData.is_host,
+                    score: playerData.score || 0,
+                    joinedAt: playerData.joined_at
+                };
+                room.players.set(player.id, player);
+            });
+            
+            // Store in memory
+            rooms.set(roomCode, room);
+            console.log(`🔄 Room ${roomCode} restored from database with ${room.players.size} players`);
+        }
+        
+        res.json({
+            code: roomCode,
+            hostName: room.hostName,
+            gameType: room.gameType,
+            playerCount: room.players.size,
+            players: Array.from(room.players.values()),
+            gameState: room.gameState,
+            type: 'roomUpdate'
+        });
+    } catch (error) {
+        console.error('❌ Error fetching room:', error);
+        res.status(500).json({ error: 'Failed to fetch room' });
     }
-    
-    res.json({
-        code: roomCode,
-        hostName: room.hostName,
-        gameType: room.gameType,
-        playerCount: room.players.size,
-        players: Array.from(room.players.values()),
-        gameState: room.gameState,
-        type: 'roomUpdate'
-    });
 });
 
 // Create room API
@@ -240,10 +304,68 @@ app.post('/api/room/create', async (req, res) => {
 app.post('/api/room/join', async (req, res) => {
     try {
         const { roomCode, playerName } = req.body;
-        const room = rooms.get(roomCode);
+        
+        // Try to get room from memory first, then from database
+        let room = rooms.get(roomCode);
         
         if (!room) {
-            return res.status(404).json({ error: 'Room not found' });
+            console.log(`🔄 Room ${roomCode} not in memory for join, checking database...`);
+            
+            const { data: roomData, error: roomError } = await supabase
+                .from('rooms')
+                .select('*')
+                .eq('code', roomCode)
+                .single();
+                
+            if (roomError || !roomData) {
+                return res.status(404).json({ error: 'Room not found' });
+            }
+            
+            // Get existing players from database
+            const { data: playersData, error: playersError } = await supabase
+                .from('players')
+                .select('*')
+                .eq('room_id', roomData.id)
+                .is('left_at', null);
+                
+            if (playersError) {
+                console.error('❌ Error fetching players:', playersError);
+                return res.status(500).json({ error: 'Failed to fetch players' });
+            }
+            
+            // Recreate room in memory
+            room = {
+                code: roomCode,
+                host: roomData.host_id,
+                hostName: roomData.host_name,
+                gameType: roomData.game_type,
+                players: new Map(),
+                gameState: roomData.status,
+                currentGame: null,
+                scores: new Map(),
+                settings: roomData.settings || {
+                    maxPlayers: 8,
+                    gameDuration: 30,
+                    categories: ['spicy', 'funny', 'sport', 'movie']
+                }
+            };
+            
+            // Add existing players to room
+            playersData.forEach(playerData => {
+                const player = {
+                    id: playerData.socket_id,
+                    name: playerData.player_name,
+                    avatar: playerData.avatar,
+                    isHost: playerData.is_host,
+                    score: playerData.score || 0,
+                    joinedAt: playerData.joined_at
+                };
+                room.players.set(player.id, player);
+            });
+            
+            // Store in memory
+            rooms.set(roomCode, room);
+            console.log(`🔄 Room ${roomCode} restored from database with ${room.players.size} players`);
         }
         
         if (room.players.size >= room.settings.maxPlayers) {
