@@ -190,6 +190,12 @@ app.get('/api/debug/test-update/:roomCode', async (req, res) => {
         console.log(`🧪 Testing database update for room ${roomCode}...`);
         
         // Try to update the room status
+        console.log(`📝 Attempting update with data:`, { 
+            status: 'playing',
+            started_at: new Date().toISOString(),
+            game_type: 'simpleTest'
+        });
+        
         const { data: updateData, error: updateError } = await supabase
             .from('rooms')
             .update({ 
@@ -199,6 +205,8 @@ app.get('/api/debug/test-update/:roomCode', async (req, res) => {
             })
             .eq('code', roomCode)
             .select();
+            
+        console.log(`📊 Update result:`, { updateData, updateError });
             
         if (updateError) {
             console.error('❌ Test update failed:', updateError);
