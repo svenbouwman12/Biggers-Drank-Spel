@@ -8,6 +8,14 @@ const socketIo = require('socket.io');
 const cors = require('cors');
 const QRCode = require('qrcode');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
+
+// Supabase configuration
+const SUPABASE_URL = 'https://tmqnpdtbldewusevrgxc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtcW5wZHRibGRld3VzZXZyZ3hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg0NTYzNDMsImV4cCI6MjA3NDAzMjM0M30.0YsgPSlp-_Egj72t7e5wZRIWxQWXIouvGY_jXHLS1Ys';
+
+// Initialize Supabase client
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const app = express();
 const server = http.createServer(app);
@@ -91,6 +99,190 @@ const gameData = {
 };
 
 // ============================================================================
+// SUPABASE DATABASE FUNCTIONS
+// ============================================================================
+
+// Create room in database
+async function createRoomInDB(roomData) {
+    try {
+        const { data, error } = await supabase
+            .from('rooms')
+            .insert([{
+                code: roomData.code,
+                host_name: roomData.hostName,
+                host_id: roomData.hostId,
+                game_type: roomData.gameType,
+                status: 'lobby',
+                max_players: roomData.maxPlayers || 8,
+                current_players: 1,
+                settings: roomData.settings || {}
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        console.log('🏠 Room created in database:', data);
+        return data;
+    } catch (error) {
+        console.error('❌ Error creating room in database:', error);
+        throw error;
+    }
+}
+
+// Add player to database
+async function addPlayerToDB(roomCode, playerData) {
+    try {
+        // Get room ID
+        const { data: room, error: roomError } = await supabase
+            .from('rooms')
+            .select('id, current_players')
+            .eq('code', roomCode)
+            .single();
+
+        if (roomError) throw roomError;
+
+        // Add player
+        const { data, error } = await supabase
+            .from('players')
+            .insert([{
+                room_id: room.id,
+                socket_id: playerData.socketId,
+                player_name: playerData.name,
+                avatar: playerData.avatar,
+                is_host: playerData.isHost || false,
+                is_ready: false,
+                score: 0
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        // Update room player count
+        await supabase
+            .from('rooms')
+            .update({ current_players: room.current_players + 1 })
+            .eq('code', roomCode);
+
+        console.log('👤 Player added to database:', data);
+        return data;
+    } catch (error) {
+        console.error('❌ Error adding player to database:', error);
+        throw error;
+    }
+}
+
+// Remove player from database
+async function removePlayerFromDB(socketId) {
+    try {
+        // Get player info
+        const { data: player, error: playerError } = await supabase
+            .from('players')
+            .select('*, rooms!inner(code)')
+            .eq('socket_id', socketId)
+            .single();
+
+        if (playerError) throw playerError;
+
+        // Update player as left
+        await supabase
+            .from('players')
+            .update({ left_at: new Date().toISOString() })
+            .eq('socket_id', socketId);
+
+        // Update room player count
+        const { data: room, error: roomError } = await supabase
+            .from('rooms')
+            .select('current_players')
+            .eq('code', player.rooms.code)
+            .single();
+
+        if (roomError) throw roomError;
+
+        await supabase
+            .from('rooms')
+            .update({ current_players: Math.max(0, room.current_players - 1) })
+            .eq('code', player.rooms.code);
+
+        console.log('👋 Player removed from database');
+        return { roomCode: player.rooms.code };
+    } catch (error) {
+        console.error('❌ Error removing player from database:', error);
+        throw error;
+    }
+}
+
+// Log game event
+async function logGameEvent(roomCode, socketId, eventType, eventData) {
+    try {
+        // Get room and player IDs
+        const { data: room, error: roomError } = await supabase
+            .from('rooms')
+            .select('id')
+            .eq('code', roomCode)
+            .single();
+
+        if (roomError) throw roomError;
+
+        const { data: player, error: playerError } = await supabase
+            .from('players')
+            .select('id')
+            .eq('socket_id', socketId)
+            .single();
+
+        if (playerError) throw playerError;
+
+        const { data, error } = await supabase
+            .from('game_events')
+            .insert([{
+                room_id: room.id,
+                player_id: player.id,
+                event_type: eventType,
+                event_data: eventData,
+                round_number: eventData.roundNumber || 1,
+                game_phase: eventData.gamePhase || 'playing'
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('❌ Error logging game event:', error);
+        throw error;
+    }
+}
+
+// Update room status
+async function updateRoomStatus(roomCode, status, additionalData = {}) {
+    try {
+        const updateData = {
+            status,
+            ...additionalData
+        };
+
+        if (status === 'playing') {
+            updateData.started_at = new Date().toISOString();
+        } else if (status === 'finished') {
+            updateData.finished_at = new Date().toISOString();
+        }
+
+        const { data, error } = await supabase
+            .from('rooms')
+            .update(updateData)
+            .eq('code', roomCode)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('❌ Error updating room status:', error);
+        throw error;
+    }
+}
+
+// ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
@@ -118,59 +310,86 @@ io.on('connection', (socket) => {
     console.log(`🔌 User connected: ${socket.id}`);
 
     // Create new room
-    socket.on('createRoom', (data) => {
+    socket.on('createRoom', async (data) => {
         const { hostName, gameType } = data;
         const roomCode = generateRoomCode();
         
-        const room = {
-            code: roomCode,
-            host: socket.id,
-            hostName: hostName,
-            gameType: gameType || 'mixed',
-            players: new Map(),
-            gameState: 'lobby',
-            currentGame: null,
-            scores: new Map(),
-            settings: {
-                maxPlayers: 8,
-                gameDuration: 30,
-                categories: ['spicy', 'funny', 'sport', 'movie']
-            }
-        };
-        
-        // Add host to room
-        const player = {
-            id: socket.id,
-            name: hostName,
-            avatar: generateAvatar(),
-            isHost: true,
-            score: 0,
-            isReady: false
-        };
-        
-        room.players.set(socket.id, player);
-        room.scores.set(socket.id, 0);
-        rooms.set(roomCode, room);
-        players.set(socket.id, roomCode);
-        
-        socket.join(roomCode);
-        
-        console.log(`🏠 Room created: ${roomCode} by ${hostName}`);
-        
-        socket.emit('roomCreated', {
-            roomCode: roomCode,
-            room: {
+        try {
+            // Create room in database
+            await createRoomInDB({
                 code: roomCode,
                 hostName: hostName,
-                gameType: gameType,
-                playerCount: 1,
-                players: Array.from(room.players.values())
-            }
-        });
+                hostId: socket.id,
+                gameType: gameType || 'mixed',
+                maxPlayers: 8,
+                settings: {
+                    gameDuration: 30,
+                    categories: ['spicy', 'funny', 'sport', 'movie']
+                }
+            });
+
+            // Add host to database
+            await addPlayerToDB(roomCode, {
+                socketId: socket.id,
+                name: hostName,
+                avatar: generateAvatar(),
+                isHost: true
+            });
+
+            // Create room in memory
+            const room = {
+                code: roomCode,
+                host: socket.id,
+                hostName: hostName,
+                gameType: gameType || 'mixed',
+                players: new Map(),
+                gameState: 'lobby',
+                currentGame: null,
+                scores: new Map(),
+                settings: {
+                    maxPlayers: 8,
+                    gameDuration: 30,
+                    categories: ['spicy', 'funny', 'sport', 'movie']
+                }
+            };
+            
+            // Add host to room
+            const player = {
+                id: socket.id,
+                name: hostName,
+                avatar: generateAvatar(),
+                isHost: true,
+                score: 0,
+                isReady: false
+            };
+            
+            room.players.set(socket.id, player);
+            room.scores.set(socket.id, 0);
+            rooms.set(roomCode, room);
+            players.set(socket.id, roomCode);
+            
+            socket.join(roomCode);
+            
+            console.log(`🏠 Room created: ${roomCode} by ${hostName}`);
+            
+            socket.emit('roomCreated', {
+                roomCode: roomCode,
+                room: {
+                    code: roomCode,
+                    hostName: hostName,
+                    gameType: gameType,
+                    playerCount: 1,
+                    players: Array.from(room.players.values())
+                }
+            });
+        } catch (error) {
+            console.error('❌ Error creating room:', error);
+            socket.emit('error', { message: 'Failed to create room' });
+        }
     });
 
     // Join existing room
-    socket.on('joinRoom', (data) => {
+    socket.on('joinRoom', async (data) => {
         const { roomCode, playerName } = data;
         const room = rooms.get(roomCode);
         
@@ -189,39 +408,52 @@ io.on('connection', (socket) => {
             return;
         }
         
-        // Add player to room
-        const player = {
-            id: socket.id,
-            name: playerName,
-            avatar: generateAvatar(),
-            isHost: false,
-            score: 0,
-            isReady: false
-        };
-        
-        room.players.set(socket.id, player);
-        room.scores.set(socket.id, 0);
-        players.set(socket.id, roomCode);
-        
-        socket.join(roomCode);
-        
-        console.log(`👤 Player joined: ${playerName} to room ${roomCode}`);
-        
-        // Notify all players in room
-        io.to(roomCode).emit('playerJoined', {
-            player: player,
-            room: {
-                code: roomCode,
-                hostName: room.hostName,
-                gameType: room.gameType,
-                playerCount: room.players.size,
-                players: Array.from(room.players.values())
-            }
-        });
+        try {
+            // Add player to database
+            await addPlayerToDB(roomCode, {
+                socketId: socket.id,
+                name: playerName,
+                avatar: generateAvatar(),
+                isHost: false
+            });
+
+            // Add player to room
+            const player = {
+                id: socket.id,
+                name: playerName,
+                avatar: generateAvatar(),
+                isHost: false,
+                score: 0,
+                isReady: false
+            };
+            
+            room.players.set(socket.id, player);
+            room.scores.set(socket.id, 0);
+            players.set(socket.id, roomCode);
+            
+            socket.join(roomCode);
+            
+            console.log(`👤 Player joined: ${playerName} to room ${roomCode}`);
+            
+            // Notify all players in room
+            io.to(roomCode).emit('playerJoined', {
+                player: player,
+                room: {
+                    code: roomCode,
+                    hostName: room.hostName,
+                    gameType: room.gameType,
+                    playerCount: room.players.size,
+                    players: Array.from(room.players.values())
+                }
+            });
+        } catch (error) {
+            console.error('❌ Error joining room:', error);
+            socket.emit('error', { message: 'Failed to join room' });
+        }
     });
 
     // Start game
-    socket.on('startGame', (data) => {
+    socket.on('startGame', async (data) => {
         const roomCode = players.get(socket.id);
         const room = rooms.get(roomCode);
         
@@ -235,22 +467,32 @@ io.on('connection', (socket) => {
             return;
         }
         
-        room.gameState = 'playing';
-        room.currentGame = data.gameType || 'mostLikelyTo';
-        
-        console.log(`🎮 Game started in room ${roomCode}: ${room.currentGame}`);
-        
-        io.to(roomCode).emit('gameStarted', {
-            gameType: room.currentGame,
-            players: Array.from(room.players.values())
-        });
-        
-        // Start the specific game
-        startGame(roomCode, room.currentGame);
+        try {
+            // Update room status in database
+            await updateRoomStatus(roomCode, 'playing', {
+                game_type: data.gameType || 'mostLikelyTo'
+            });
+
+            room.gameState = 'playing';
+            room.currentGame = data.gameType || 'mostLikelyTo';
+            
+            console.log(`🎮 Game started in room ${roomCode}: ${room.currentGame}`);
+            
+            io.to(roomCode).emit('gameStarted', {
+                gameType: room.currentGame,
+                players: Array.from(room.players.values())
+            });
+            
+            // Start the specific game
+            startGame(roomCode, room.currentGame);
+        } catch (error) {
+            console.error('❌ Error starting game:', error);
+            socket.emit('error', { message: 'Failed to start game' });
+        }
     });
 
     // Submit vote/answer
-    socket.on('submitVote', (data) => {
+    socket.on('submitVote', async (data) => {
         const roomCode = players.get(socket.id);
         const room = rooms.get(roomCode);
         
@@ -261,15 +503,28 @@ io.on('connection', (socket) => {
         const player = room.players.get(socket.id);
         if (!player) return;
         
-        // Store the vote
-        if (!room.votes) room.votes = new Map();
-        room.votes.set(socket.id, data);
-        
-        console.log(`🗳️ Vote submitted by ${player.name}:`, data);
-        
-        // Check if all players have voted
-        if (room.votes.size === room.players.size) {
-            processVotes(roomCode);
+        try {
+            // Log game event in database
+            await logGameEvent(roomCode, socket.id, 'vote', {
+                vote: data.vote,
+                voteType: data.voteType || 'player_vote',
+                roundNumber: room.currentRound || 1,
+                gamePhase: 'playing',
+                responseTime: data.responseTime || 0
+            });
+
+            // Store the vote
+            if (!room.votes) room.votes = new Map();
+            room.votes.set(socket.id, data);
+            
+            console.log(`🗳️ Vote submitted by ${player.name}:`, data);
+            
+            // Check if all players have voted
+            if (room.votes.size === room.players.size) {
+                processVotes(roomCode);
+            }
+        } catch (error) {
+            console.error('❌ Error submitting vote:', error);
         }
     });
 
@@ -293,7 +548,7 @@ io.on('connection', (socket) => {
     });
 
     // Disconnect
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
         const roomCode = players.get(socket.id);
         const room = rooms.get(roomCode);
         
@@ -302,6 +557,13 @@ io.on('connection', (socket) => {
             
             if (player) {
                 console.log(`👋 Player left: ${player.name} from room ${roomCode}`);
+                
+                try {
+                    // Remove player from database
+                    await removePlayerFromDB(socket.id);
+                } catch (error) {
+                    console.error('❌ Error removing player from database:', error);
+                }
                 
                 // Remove player from room
                 room.players.delete(socket.id);

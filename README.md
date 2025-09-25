@@ -35,12 +35,24 @@ Een moderne multiplayer online drankspel applicatie met lobby, join-code en mini
 npm install
 ```
 
-### 2. Start Server
+### 2. Setup Supabase Database
+```bash
+# Option A: Automatic installation
+node install_supabase.js
+
+# Option B: Manual installation
+# 1. Go to https://supabase.com/dashboard
+# 2. Open SQL Editor
+# 3. Copy and paste supabase_schema.sql
+# 4. Click Run
+```
+
+### 3. Start Server
 ```bash
 npm start
 ```
 
-### 3. Open Browser
+### 4. Open Browser
 ```
 http://localhost:3000
 ```
