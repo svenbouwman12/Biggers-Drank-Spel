@@ -267,7 +267,7 @@ function startGame() {
         return;
     }
     
-    const gameType = gameState.currentGame || 'mostLikelyTo';
+    const gameType = gameState.currentGame || 'simpleTest';
     startGameAPI(gameType);
 }
 
@@ -342,18 +342,23 @@ function handleGameStarted(data) {
     // Update game title
     const gameTitle = document.getElementById('gameTitle');
     if (gameTitle) {
-        gameTitle.textContent = `🎮 ${data.gameType === 'mostLikelyTo' ? 'Most Likely To' : 'Game'} - Room ${currentRoom}`;
+        gameTitle.textContent = `🎮 Simple Test Game - Room ${currentRoom}`;
     }
     
-    // Show a simple game interface for now
+    // Show the simple test game interface
     const gameContent = document.getElementById('gameContent');
     if (gameContent) {
         gameContent.innerHTML = `
             <div class="game-question">
-                <h3>🎉 Game Started!</h3>
+                <h3>🎯 Simple Test Game</h3>
                 <p>Room: <strong>${currentRoom}</strong></p>
                 <p>Players: <strong>${data.players.length}</strong></p>
-                <p>Game Type: <strong>${data.gameType}</strong></p>
+                <p>This is a simple multiplayer test game!</p>
+                
+                <div class="game-round">
+                    <h4>Current Round: 1</h4>
+                    <p class="round-instruction">Say your name</p>
+                </div>
                 
                 <div class="game-actions">
                     <button class="glass-button primary" onclick="nextRound()">
@@ -502,42 +507,48 @@ function showJoinForm() {
 function nextRound() {
     console.log('🎮 Next round requested');
     
-    // Show a sample "Most Likely To" question
+    // Simple test game rounds
+    const rounds = [
+        "Say your name",
+        "Count to 5",
+        "Say 'Hello World'",
+        "Wave your hand",
+        "Smile!"
+    ];
+    
+    // Get current round (simple counter for now)
+    const currentRound = Math.floor(Math.random() * rounds.length) + 1;
+    const roundInstruction = rounds[currentRound - 1];
+    
     const gameContent = document.getElementById('gameContent');
     if (gameContent) {
-        const questions = [
-            "Wie zou het eerst dronken worden?",
-            "Wie zou het eerst een tattoo laten zetten?",
-            "Wie zou het eerst trouwen?",
-            "Wie zou het eerst een miljoen verdienen?",
-            "Wie zou het eerst een boek schrijven?",
-            "Wie zou het eerst een wereldreis maken?",
-            "Wie zou het eerst een eigen bedrijf starten?",
-            "Wie zou het eerst een huis kopen?",
-            "Wie zou het eerst een kind krijgen?",
-            "Wie zou het eerst een beroemdheid ontmoeten?"
-        ];
-        
-        const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-        
         gameContent.innerHTML = `
             <div class="game-question">
-                <h3>❓ Most Likely To...</h3>
-                <p class="question-text">${randomQuestion}</p>
+                <h3>🎯 Simple Test Game</h3>
+                <p>Room: <strong>${currentRoom}</strong></p>
+                <p>Players: <strong>${currentRoomData ? currentRoomData.players.length : 0}</strong></p>
                 
-                <div class="voting-area">
-                    <p>Stem op wie jij denkt dat het meest waarschijnlijk is:</p>
-                    <div class="players-voting">
-                        ${currentRoomData ? currentRoomData.players.map(player => `
-                            <button class="player-vote-button" onclick="voteForPlayer('${player.id}', '${player.name}')">
-                                <span class="player-avatar">${player.avatar}</span>
-                                <span class="player-name">${player.name}</span>
-                            </button>
-                        `).join('') : ''}
-                    </div>
+                <div class="game-round">
+                    <h4>Current Round: ${currentRound}</h4>
+                    <p class="round-instruction">${roundInstruction}</p>
+                </div>
+                
+                <div class="players-list">
+                    <h4>Players in this round:</h4>
+                    ${currentRoomData ? currentRoomData.players.map(player => `
+                        <div class="player-in-round">
+                            <span class="player-avatar">${player.avatar}</span>
+                            <span class="player-name">${player.name}</span>
+                        </div>
+                    `).join('') : ''}
                 </div>
                 
                 <div class="game-actions">
+                    <button class="glass-button primary" onclick="nextRound()">
+                        <span class="button-icon">▶️</span>
+                        <span class="button-text">Next Round</span>
+                    </button>
+                    
                     <button class="glass-button secondary" onclick="backToLobby()">
                         <span class="button-icon">🏠</span>
                         <span class="button-text">Back to Lobby</span>
@@ -547,16 +558,10 @@ function nextRound() {
         `;
     }
     
-    showNotification('Vote voor wie jij denkt dat het meest waarschijnlijk is!', 'info');
+    showNotification(`Round ${currentRound}: ${roundInstruction}`, 'info');
 }
 
-function voteForPlayer(playerId, playerName) {
-    console.log(`🗳️ Voted for: ${playerName}`);
-    showNotification(`Je hebt gestemd op ${playerName}!`, 'success');
-    
-    // TODO: Send vote to server
-    // For now, just show a confirmation
-}
+// Simple test game - no voting needed
 
 function backToLobby() {
     console.log('🏠 Back to lobby requested');

@@ -29,63 +29,19 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Store active rooms and games
 const rooms = new Map();
 
-// Game data
+// Simple test game data
 const gameData = {
-    // Most Likely To questions
-    mostLikelyTo: [
-        "Wie zou het eerst dronken worden?",
-        "Wie zou het eerst een tattoo laten zetten?",
-        "Wie zou het eerst trouwen?",
-        "Wie zou het eerst een miljoen verdienen?",
-        "Wie zou het eerst een boek schrijven?",
-        "Wie zou het eerst een wereldreis maken?",
-        "Wie zou het eerst een eigen bedrijf starten?",
-        "Wie zou het eerst een huis kopen?",
-        "Wie zou het eerst een kind krijgen?",
-        "Wie zou het eerst een beroemdheid ontmoeten?"
-    ],
-    
-    // Truth or Drink questions
-    truthOrDrink: [
-        "Wat is je grootste geheim?",
-        "Wat is het domste dat je ooit hebt gedaan?",
-        "Wie is je celebrity crush?",
-        "Wat is je grootste angst?",
-        "Wat is het ergste dat je ooit hebt gelogen?",
-        "Wie zou je willen zijn voor een dag?",
-        "Wat is je grootste spijt?",
-        "Wat is het gekste dat je ooit hebt gedaan?",
-        "Wie is je grootste rivaal?",
-        "Wat is je grootste droom?"
-    ],
-    
-    // Speed Tap challenges
-    speedTap: [
-        "Klik zo snel mogelijk!",
-        "Wie is de snelste?",
-        "Race tegen de tijd!",
-        "Snelle vingers test!",
-        "Reactie test!"
-    ],
-    
-    // Quiz questions
-    quiz: [
-        {
-            question: "Wat is de hoofdstad van Nederland?",
-            options: ["Amsterdam", "Rotterdam", "Den Haag", "Utrecht"],
-            correct: 0
-        },
-        {
-            question: "Hoeveel dagen heeft februari in een schrikkeljaar?",
-            options: ["28", "29", "30", "31"],
-            correct: 1
-        },
-        {
-            question: "Wat is de snelste dier ter wereld?",
-            options: ["Cheetah", "Luipaard", "Jachtluipaard", "Tijger"],
-            correct: 2
-        }
-    ]
+    simpleTest: {
+        name: "Simple Test Game",
+        description: "A basic multiplayer test game",
+        rounds: [
+            "Round 1: Say your name",
+            "Round 2: Count to 5",
+            "Round 3: Say 'Hello World'",
+            "Round 4: Wave your hand",
+            "Round 5: Smile!"
+        ]
+    }
 };
 
 // ============================================================================
@@ -116,17 +72,20 @@ function startGame(roomCode, gameType) {
 
     console.log(`🎮 Starting ${gameType} game in room ${roomCode}`);
 
-    if (gameType === 'mostLikelyTo') {
-        const questions = gameData.mostLikelyTo;
-        const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-        
-        room.currentQuestion = {
+    if (gameType === 'simpleTest') {
+        room.currentGame = {
             id: Date.now(),
-            question: randomQuestion,
-            gameType: 'mostLikelyTo',
-            answers: new Map(),
-            timeLeft: 30
+            type: 'simpleTest',
+            name: gameData.simpleTest.name,
+            description: gameData.simpleTest.description,
+            currentRound: 0,
+            totalRounds: gameData.simpleTest.rounds.length,
+            rounds: gameData.simpleTest.rounds,
+            scores: new Map(),
+            startTime: Date.now()
         };
+        
+        console.log(`🎯 Simple test game started with ${room.currentGame.totalRounds} rounds`);
     }
 }
 
@@ -522,7 +481,7 @@ app.post('/api/game/start', async (req, res) => {
         console.log(`🔄 Updated room ${roomCode} status to 'playing' in database`);
 
         room.gameState = 'playing';
-        room.currentGame = gameType || 'mostLikelyTo';
+        room.currentGame = gameType || 'simpleTest';
         
         console.log(`🎮 Game started via API in room ${roomCode}: ${room.currentGame}`);
         console.log(`👥 Players in room before game start: ${room.players.size}`);
