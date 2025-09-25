@@ -174,11 +174,11 @@ app.get('/api/room/:roomCode', async (req, res) => {
         
         console.log(`✅ Found room ${roomCode} in database:`, roomData);
         
-        // Get players from database
+        // Get players from database using room UUID
         const { data: playersData, error: playersError } = await supabase
             .from('players')
             .select('*')
-            .eq('room_id', roomCode) // Using room code as room_id
+            .eq('room_id', roomData.id) // Using room UUID
             .is('left_at', null);
             
         if (playersError) {
@@ -246,6 +246,20 @@ app.post('/api/room/create', async (req, res) => {
         
         console.log(`✅ Room ${roomCode} created in database successfully`);
 
+        // Get the room ID from database for foreign key reference
+        const { data: roomData, error: roomFetchError } = await supabase
+            .from('rooms')
+            .select('id')
+            .eq('code', roomCode)
+            .single();
+            
+        if (roomFetchError || !roomData) {
+            console.error('❌ Error fetching room ID:', roomFetchError);
+            return res.status(500).json({ error: 'Failed to fetch room ID' });
+        }
+        
+        console.log(`✅ Retrieved room ID: ${roomData.id}`);
+
         // Create room in memory
         const room = {
             code: roomCode,
@@ -274,11 +288,11 @@ app.post('/api/room/create', async (req, res) => {
             joinedAt: new Date().toISOString()
         };
         
-        // Add host to database (using room code as room_id for now)
+        // Add host to database using room UUID
         const { error: playerError } = await supabase
             .from('players')
             .insert([{
-                room_id: roomCode,
+                room_id: roomData.id, // Use UUID instead of room code
                 socket_id: hostId,
                 player_name: hostName,
                 avatar: hostAvatar,
