@@ -223,14 +223,21 @@ function showLobby(room) {
         playersGrid.innerHTML = '';
         
         if (room.players && room.players.length > 0) {
-            room.players.forEach(player => {
+            // Sort players to show host first
+            const sortedPlayers = [...room.players].sort((a, b) => {
+                if (a.isHost && !b.isHost) return -1;
+                if (!a.isHost && b.isHost) return 1;
+                return 0;
+            });
+            
+            sortedPlayers.forEach(player => {
                 console.log('👤 Adding player to lobby:', player);
                 const playerElement = document.createElement('div');
-                playerElement.className = 'player-item';
+                playerElement.className = `player-item ${player.isHost ? 'host-player' : ''}`;
                 playerElement.innerHTML = `
                     <span class="player-avatar">${player.avatar}</span>
                     <span class="player-name">${player.name}</span>
-                    ${player.isHost ? '<span class="host-badge">Host</span>' : ''}
+                    ${player.isHost ? '<span class="host-badge">👑 Host</span>' : ''}
                 `;
                 playersGrid.appendChild(playerElement);
             });
