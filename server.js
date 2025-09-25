@@ -122,8 +122,11 @@ app.get('/api/room/:roomCode', async (req, res) => {
                 .single();
                 
             if (roomError || !roomData) {
+                console.log(`❌ Room ${roomCode} not found in database:`, roomError);
                 return res.status(404).json({ error: 'Room not found' });
             }
+            
+            console.log(`✅ Found room ${roomCode} in database:`, roomData);
             
             // Get players from database
             const { data: playersData, error: playersError } = await supabase
@@ -193,6 +196,7 @@ app.post('/api/room/create', async (req, res) => {
     try {
         const { hostName, gameType } = req.body;
         const roomCode = generateRoomCode();
+        const hostId = 'api_' + Date.now();
         
         // Create room in database
         await supabase
@@ -200,7 +204,7 @@ app.post('/api/room/create', async (req, res) => {
             .insert([{
                 code: roomCode,
                 host_name: hostName,
-                host_id: 'api_' + Date.now(),
+                host_id: hostId,
                 game_type: gameType || 'simpleTest',
                 status: 'lobby',
                 max_players: 8,
@@ -212,7 +216,6 @@ app.post('/api/room/create', async (req, res) => {
             }]);
 
         // Create room in memory
-        const hostId = 'api_' + Date.now();
         const room = {
             code: roomCode,
             host: hostId,
@@ -240,7 +243,7 @@ app.post('/api/room/create', async (req, res) => {
             joinedAt: new Date().toISOString()
         };
         
-        // Add host to database
+        // Add host to database (using room code as room_id for now)
         await supabase
             .from('players')
             .insert([{
