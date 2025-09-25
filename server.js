@@ -1284,8 +1284,11 @@ app.post('/api/room/leave', async (req, res) => {
             .eq('room_id', roomData.id)
             .is('left_at', null);
                 
+        let playerCount = 0;
+        let roomDeleted = false;
+        
         if (!countError) {
-            const playerCount = remainingPlayers?.length || 0;
+            playerCount = remainingPlayers?.length || 0;
             
             // Update player count
             await supabase
@@ -1314,14 +1317,18 @@ app.post('/api/room/leave', async (req, res) => {
                 // Remove from memory
                 rooms.delete(roomCode);
                 
+                roomDeleted = true;
                 console.log(`✅ Room ${roomCode} deleted from database and memory`);
             }
+        } else {
+            console.error('❌ Error counting remaining players:', countError);
         }
         
         res.json({ 
             success: true, 
             message: 'Left room successfully',
-            roomDeleted: playerCount === 0
+            roomDeleted: roomDeleted,
+            playerCount: playerCount
         });
         
     } catch (error) {
@@ -1386,6 +1393,25 @@ app.post('/api/cleanup/empty-rooms', async (req, res) => {
     } catch (error) {
         console.error('❌ Error in cleanup:', error);
         res.status(500).json({ error: 'Cleanup failed', details: error.message });
+    }
+});
+
+// Debug endpoint to test leave functionality
+app.post('/api/debug/test-leave', async (req, res) => {
+    try {
+        const { roomCode, playerId } = req.body;
+        console.log(`🧪 Debug test leave for room: ${roomCode}, player: ${playerId}`);
+        
+        // Just return success without doing anything
+        res.json({
+            success: true,
+            message: 'Debug test successful',
+            roomCode: roomCode,
+            playerId: playerId
+        });
+    } catch (error) {
+        console.error('❌ Debug test error:', error);
+        res.status(500).json({ error: 'Debug test failed', details: error.message });
     }
 });
 
