@@ -80,83 +80,20 @@ body {
     font-weight: 300;
 }
 
-/* Game grid */
-.game-grid {
+/* Start game section */
+.start-game {
     display: flex;
     justify-content: center;
     margin: 40px 0;
 }
 
-.game-grid .game-card {
-    max-width: 400px;
-    width: 100%;
+.btn-large {
+    font-size: 1.3rem;
+    padding: 20px 40px;
+    border-radius: 30px;
+    box-shadow: 0 8px 25px rgba(0, 184, 148, 0.4);
 }
 
-.game-card {
-    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
-    color: white;
-    padding: 30px;
-    border-radius: 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 10px 30px rgba(116, 185, 255, 0.3);
-    position: relative;
-    overflow: hidden;
-}
-
-.game-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
-}
-
-.game-card:hover::before {
-    left: 100%;
-}
-
-.game-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 40px rgba(116, 185, 255, 0.4);
-}
-
-.game-icon {
-    font-size: 4rem;
-    margin-bottom: 20px;
-    display: block;
-}
-
-.game-card h3 {
-    font-size: 1.5rem;
-    margin-bottom: 15px;
-    font-weight: 600;
-}
-
-.game-card p {
-    font-size: 1rem;
-    opacity: 0.9;
-    margin-bottom: 20px;
-    line-height: 1.5;
-}
-
-.game-status {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    display: inline-block;
-}
-
-.game-status.coming-soon {
-    background: rgba(255, 193, 7, 0.3);
-    color: #ffc107;
-}
 
 /* Buttons */
 .btn {
