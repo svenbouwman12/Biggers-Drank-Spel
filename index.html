@@ -5,308 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Drankspel Party 🎉🍻</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍻</text></svg>">
 </head>
 <body>
     <div class="app-container">
-        <!-- Confetti container -->
-        <div id="confetti" class="confetti-container"></div>
-        
-        <!-- Startscherm -->
+        <!-- Start Screen -->
         <div id="startScreen" class="screen active">
             <div class="screen-content">
-                <h1>🎉🍻 Drankspel Party</h1>
-                <p>Kies je spel en begin met feesten!</p>
-                
-                <div class="start-buttons">
-                    <button class="btn btn-primary btn-large" onclick="showGameSelection()">🎮 Start Spel</button>
-                    <button class="btn btn-secondary" onclick="showGameRules()">📖 Spelregels</button>
-                    <button class="btn btn-secondary" onclick="showSettings()">⚙️ Instellingen</button>
-                    <button class="btn btn-secondary" onclick="showScoreboard()">📊 Scorebord</button>
+                <div class="header">
+                    <h1>🎉🍻 Drankspel Party</h1>
+                    <p class="subtitle">Kies je spel en begin met feesten!</p>
                 </div>
                 
-                <!-- Veiligheidsdisclaimer -->
+                <div class="game-grid">
+                    <div class="game-card" onclick="startGame('paardenrace')">
+                        <div class="game-icon">🏇</div>
+                        <h3>Paardenrace</h3>
+                        <p>Race met azen en plaats je inzet!</p>
+                        <div class="game-status">Beschikbaar</div>
+                    </div>
+                    
+                    <div class="game-card" onclick="startGame('mexico')">
+                        <div class="game-icon">🎲</div>
+                        <h3>Mexico</h3>
+                        <p>Gooi dobbelstenen en probeer de hoogste score!</p>
+                        <div class="game-status coming-soon">Binnenkort</div>
+                    </div>
+                    
+                    <div class="game-card" onclick="startGame('bussen')">
+                        <div class="game-icon">🃏</div>
+                        <h3>Bussen</h3>
+                        <p>Raad kaarten en overleef de bus!</p>
+                        <div class="game-status coming-soon">Binnenkort</div>
+                    </div>
+                </div>
+                
                 <div class="safety-disclaimer">
                     ⚠️ Speel verantwoordelijk. Deze app is bedoeld voor volwassenen. Drink met mate.
                 </div>
             </div>
         </div>
 
-        <!-- Spelkeuze scherm -->
-        <div id="gameSelection" class="screen">
-            <div class="screen-content">
-                <h2>🎮 Kies je spel</h2>
-                <button class="btn btn-back" onclick="showStartScreen()">← Terug</button>
-                
-                <div class="game-grid">
-                    <div class="game-card">
-                        <h3>🏇 Paardenrace</h3>
-                        <p>Race met azen en plaats je inzet!</p>
-                        <div class="game-buttons">
-                            <button class="btn btn-primary" onclick="startGame('paardenrace')">Speel</button>
-                            <button class="btn btn-secondary" onclick="showGameRules('paardenrace')">Regels</button>
-                        </div>
-                    </div>
-                    
-                    <div class="game-card">
-                        <h3>🎲 Mexico</h3>
-                        <p>Gooi dobbelstenen en probeer de hoogste score!</p>
-                        <div class="game-buttons">
-                            <button class="btn btn-primary" onclick="startGame('mexico')">Speel</button>
-                            <button class="btn btn-secondary" onclick="showGameRules('mexico')">Regels</button>
-                        </div>
-                    </div>
-                    
-                    <div class="game-card">
-                        <h3>🃏 Bussen</h3>
-                        <p>Raad kaarten en overleef de bus!</p>
-                        <div class="game-buttons">
-                            <button class="btn btn-primary" onclick="startGame('bussen')">Speel</button>
-                            <button class="btn btn-secondary" onclick="showGameRules('bussen')">Regels</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Lobby scherm -->
-        <div id="lobbyScreen" class="screen">
-            <div class="screen-content">
-                <h2>🏠 Multiplayer Lobby</h2>
-                <button class="btn btn-back" onclick="showGameSelection()">← Terug</button>
-                
-                <!-- Lobby tabs -->
-                <div class="lobby-tabs">
-                    <button class="lobby-tab-btn active" onclick="showLobbyTab('create')">🏗️ Maak lobby</button>
-                    <button class="lobby-tab-btn" onclick="showLobbyTab('join')">🚪 Join lobby</button>
-                    <button class="lobby-tab-btn" onclick="showLobbyTab('rooms')">📋 Beschikbare rooms</button>
-                </div>
-                
-                <!-- Create lobby tab -->
-                <div id="createLobbyTab" class="lobby-tab active">
-                    <h3>🏗️ Maak nieuwe lobby</h3>
-                    <div class="lobby-form">
-                        <div class="form-group">
-                            <label>Lobby naam:</label>
-                            <input type="text" id="roomName" placeholder="Voer lobby naam in" value="Feest lobby">
-                        </div>
-                        <div class="form-group">
-                            <label>Spel:</label>
-                            <select id="selectedGame">
-                                <option value="paardenrace">🏇 Paardenrace</option>
-                                <option value="mexico">🎲 Mexico</option>
-                                <option value="bussen">🃏 Bussen</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Max spelers:</label>
-                            <select id="maxPlayers">
-                                <option value="2">2 spelers</option>
-                                <option value="3">3 spelers</option>
-                                <option value="4" selected>4 spelers</option>
-                                <option value="5">5 spelers</option>
-                                <option value="6">6 spelers</option>
-                                <option value="7">7 spelers</option>
-                                <option value="8">8 spelers</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Jouw naam:</label>
-                            <input type="text" id="playerName" placeholder="Voer je naam in" value="Host">
-                        </div>
-                        <button class="btn btn-primary" onclick="createLobby()" id="createLobbyBtn">
-                            <span class="btn-text">🏗️ Maak lobby</span>
-                            <span class="btn-loading" style="display: none;">⏳ Maken...</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Join lobby tab -->
-                <div id="joinLobbyTab" class="lobby-tab">
-                    <h3>🚪 Join lobby</h3>
-                    <div class="lobby-form">
-                        <div class="form-group">
-                            <label>Jouw naam:</label>
-                            <input type="text" id="joinPlayerName" placeholder="Voer je naam in" value="Speler">
-                        </div>
-                        <div class="form-group">
-                            <label>Room code:</label>
-                            <input type="text" id="roomCode" placeholder="Voer room code in" maxlength="6">
-                        </div>
-                        <button class="btn btn-primary" onclick="joinLobby()" id="joinLobbyBtn">
-                            <span class="btn-text">🚪 Join lobby</span>
-                            <span class="btn-loading" style="display: none;">⏳ Joinen...</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Beschikbare rooms tab -->
-                <div id="roomsTab" class="lobby-tab">
-                    <h3>📋 Beschikbare rooms</h3>
-                    <div id="roomsList" class="rooms-list">
-                        <div class="room-item">
-                            <div class="room-info">
-                                <h4>🎉 Feest lobby</h4>
-                                <p>🏇 Paardenrace • 2/4 spelers</p>
-                                <p>Room code: ABC123</p>
-                            </div>
-                            <button class="btn btn-small" onclick="joinRoomByCode('ABC123')">Join</button>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-                        <button class="btn btn-secondary" onclick="refreshRooms()">🔄 Ververs</button>
-                        <button class="btn btn-warning" onclick="forceCleanup()" style="background: #ff6b6b; color: white;">💥 Force Cleanup</button>
-                    </div>
-                </div>
-
-                <!-- Lobby tabs container -->
-                <div id="lobbyTabs">
-                    <!-- Tabs content is already above -->
-                </div>
-
-                <!-- Lobby status -->
-                <div id="lobbyStatus" class="lobby-status" style="display: none;">
-                    <h3>🏠 In lobby: <span id="currentRoomName"></span></h3>
-                    <p>Room code: <strong id="currentRoomCode"></strong></p>
-                    <p>Spel: <span id="currentGameType"></span></p>
-                    <p id="connectionStatus" class="connection-indicator">🔄 Verbonden met server</p>
-                    
-                    <div class="lobby-players">
-                        <h4>👥 Spelers (<span id="playerCount">0</span>/<span id="maxPlayerCount">0</span>)</h4>
-                        <div id="playerList" class="player-list"></div>
-                    </div>
-                    
-                    <div class="lobby-actions">
-                        <button class="btn btn-primary" id="startGameBtn" onclick="startGame()" disabled>
-                            <span class="btn-text">🎮 Start spel</span>
-                            <span class="btn-loading" style="display: none;">⏳ Starten...</span>
-                        </button>
-                        <button class="btn btn-secondary" onclick="leaveLobby()">🚪 Verlaat lobby</button>
-                        <button class="btn btn-secondary" onclick="refreshLobbyData()">🔄 Ververs</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Instellingen scherm -->
-        <div id="settingsScreen" class="screen">
-            <div class="screen-content">
-                <h2>⚙️ Instellingen</h2>
-                <button class="btn btn-back" onclick="showStartScreen()">← Terug</button>
-                
-                <div class="settings-section">
-                    <h3>👥 Spelers</h3>
-                    <div class="setting-item">
-                        <label>Aantal spelers: <span id="playerCountDisplay">4</span></label>
-                        <input type="range" id="playerCount" min="2" max="8" value="4" onchange="updatePlayerCount()">
-                    </div>
-                    <div id="playerNames"></div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>🍺 Drink instellingen</h3>
-                    <div class="setting-item">
-                        <label>Drinkeenheid:</label>
-                        <select id="drinkUnit" onchange="saveSettings()">
-                            <option value="slokken">Slokken</option>
-                            <option value="shots">Shots</option>
-                            <option value="anders">Anders</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>🎨 Weergave</h3>
-                    <div class="setting-item">
-                        <label>Animatie snelheid:</label>
-                        <select id="animationSpeed" onchange="saveSettings()">
-                            <option value="slow">Langzaam</option>
-                            <option value="normal" selected>Standaard</option>
-                            <option value="fast">Snel</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <label>
-                            <input type="checkbox" id="soundEnabled" onchange="saveSettings()">
-                            Geluid aan
-                        </label>
-                    </div>
-                </div>
-
-                <button class="btn btn-primary" onclick="saveSettings()">💾 Instellingen opslaan</button>
-            </div>
-        </div>
-
-        <!-- Spelregels scherm -->
-        <div id="rulesScreen" class="screen">
-            <div class="screen-content">
-                <h2>📖 Spelregels</h2>
-                <button class="btn btn-back" onclick="showStartScreen()">← Terug</button>
-                
-                <div class="rules-content">
-                    <div class="rule-section">
-                        <h3>🏇 Paardenrace</h3>
-                        <ul>
-                            <li>6 paarden staan aan de startlijn</li>
-                            <li>Elke beurt wordt een dobbelsteen geworpen</li>
-                            <li>Het overeenkomstige paard schuift 1 stap vooruit</li>
-                            <li>Het eerste paard dat de finish bereikt wint</li>
-                            <li>Winnaar mag 1 drankje uitdelen</li>
-                            <li>Verliezers drinken 2 slokken</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="rule-section">
-                        <h3>🎲 Mexico</h3>
-                        <ul>
-                            <li>Elke speler gooit om de beurt twee dobbelstenen</li>
-                            <li>Grootste dobbelsteen wordt de "tiental"</li>
-                            <li>Kleinste dobbelsteen wordt de "eenheid"</li>
-                            <li>Voorbeeld: worp 4 + 2 → score = 42</li>
-                            <li>21 = Mexico → altijd de hoogste score</li>
-                            <li>Laagste score moet drinken</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="rule-section">
-                        <h3>🃏 Bussen</h3>
-                        <ul>
-                            <li>Volledig deck van 52 kaarten</li>
-                            <li>Fase 1: Beantwoord vragen over kaarten</li>
-                            <li>Fout antwoord = drinken</li>
-                            <li>Fase 2: De bus - piramide van kaarten</li>
-                            <li>Als je de kaart hebt, mag je drinken uitdelen</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Scorebord scherm -->
-        <div id="scoreboardScreen" class="screen">
-            <div class="screen-content">
-                <h2>📊 Scorebord</h2>
-                <button class="btn btn-back" onclick="showStartScreen()">← Terug</button>
-                
-                <div class="scoreboard-container">
-                    <div id="scoreList" class="score-list"></div>
-                    <button class="btn btn-secondary" onclick="resetScoreboard()">🔄 Reset scorebord</button>
-                </div>
-            </div>
-        </div>
-
         <!-- Paardenrace Game -->
-        <div id="paardenraceGame" class="screen game-screen">
+        <div id="paardenraceGame" class="screen">
             <div class="screen-content">
-                <h2>🏇 Paardenrace</h2>
-                <button class="btn btn-back" onclick="showGameSelection()">← Terug</button>
+                <div class="game-header">
+                    <button class="btn btn-back" onclick="showStartScreen()">← Terug</button>
+                    <h2>🏇 Paardenrace</h2>
+                </div>
                 
                 <!-- Betting Phase -->
                 <div id="bettingPhase" class="game-phase active">
-                    <h3>💰 Plaats je inzet!</h3>
+                    <div class="phase-header">
+                        <h3>💰 Plaats je inzet!</h3>
                         <div class="betting-timer">
                             <div id="bettingTimer" class="timer">10</div>
                             <span>seconden resterend</span>
                         </div>
+                    </div>
                     
                     <div class="horses-betting">
                         <div class="horse-card" onclick="placeBet('♠')" data-suit="♠">
@@ -339,16 +95,16 @@
                 <!-- Race Phase -->
                 <div id="racePhase" class="game-phase">
                     <div class="race-track">
-                        <!-- Finish Line -->
-                        <div class="track-finish">🏁</div>
-                        
-                        <!-- Track Cards Row -->
+                        <!-- Track Cards -->
                         <div class="track-cards" id="trackCards">
                             <!-- Track cards will be dynamically added here -->
                         </div>
                         
-                        <!-- Horses (Aces) Starting Positions -->
-                        <div class="track-start">
+                        <!-- Finish Line -->
+                        <div class="track-finish">🏁</div>
+                        
+                        <!-- Horses (Aces) -->
+                        <div class="horses-container">
                             <div class="horse-ace" id="horse-spades" data-suit="♠">♠</div>
                             <div class="horse-ace" id="horse-hearts" data-suit="♥">♥</div>
                             <div class="horse-ace" id="horse-diamonds" data-suit="♦">♦</div>
@@ -359,23 +115,34 @@
                     <div class="race-controls">
                         <div class="current-card-display">
                             <div id="currentCard" class="card">?</div>
-                            <div id="cardDescription" class="card-description"></div>
+                            <div id="cardDescription" class="card-description">Wachten op kaart...</div>
                         </div>
-                        <button class="btn btn-primary" id="drawCard" onclick="drawRaceCard()">Trek Kaart</button>
+                        <button class="btn btn-primary" id="drawCard" onclick="drawRaceCard()" style="display: none;">
+                            Trek Kaart
+                        </button>
                     </div>
                 </div>
                 
                 <!-- Results Phase -->
                 <div id="resultsPhase" class="game-phase">
-                    <div id="raceResults" class="race-results"></div>
-                    <button class="btn btn-primary" onclick="resetRaceGame()">Nieuwe Race</button>
+                    <div id="raceResults" class="race-results">
+                        <div class="winner-display">
+                            <h3>🏆 Winnaar: <span id="winnerSuit"></span></h3>
+                            <p id="winnerMessage"></p>
+                        </div>
+                        <div class="drink-rules">
+                            <h4>🍻 Drinkregels:</h4>
+                            <p>Winnaars mogen drankjes uitdelen</p>
+                            <p>Verliezers moeten drinken</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="resetRaceGame()">Nieuwe Race</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
-    <!-- Supabase CDN -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="simple_supabase.js"></script>
     <script src="simple_lobby.js"></script>

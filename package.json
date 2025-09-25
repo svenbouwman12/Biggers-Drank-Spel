@@ -1,37 +1,42 @@
 {
   "name": "drankspel-party",
-  "version": "1.0.0",
-  "description": "🎉 Multiplayer drinking games webapp with Supabase integration",
+  "version": "2.0.0",
+  "description": "Een moderne multiplayer drankspel applicatie met paardenrace, mexico en bussen spellen",
   "main": "index.html",
   "scripts": {
     "start": "python -m http.server 8000",
-    "serve": "npx serve .",
-    "dev": "npx live-server --port=3000 --open=index.html"
+    "dev": "python -m http.server 8000",
+    "build": "echo 'No build step required for static site'",
+    "deploy": "echo 'Deploy to Vercel or your preferred hosting platform'"
   },
   "keywords": [
-    "drinking-games",
+    "drankspel",
+    "drinking-game",
     "multiplayer",
+    "paardenrace",
+    "mexico",
+    "bussen",
+    "party-game",
     "supabase",
-    "vanilla-js",
-    "party-games",
-    "real-time",
-    "lobby-system"
+    "javascript"
   ],
-  "author": "Rene Van der Werff",
+  "author": "Rene van der Werff",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/svenbouwman12/Biggers-Drank-Spel.git"
   },
-  "bugs": {
-    "url": "https://github.com/svenbouwman12/Biggers-Drank-Spel/issues"
-  },
-  "homepage": "https://svenbouwman12.github.io/Biggers-Drank-Spel",
-  "devDependencies": {
-    "live-server": "^1.2.2",
-    "serve": "^14.2.1"
-  },
+  "homepage": "https://biggers-drank-spel.vercel.app",
   "engines": {
     "node": ">=14.0.0"
-  }
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "devDependencies": {},
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
 }
