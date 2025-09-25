@@ -374,7 +374,7 @@ function updateGameScreen(data) {
     // Update game title
     const gameTitle = document.getElementById('gameTitle');
     if (gameTitle) {
-        gameTitle.textContent = `🎮 Simple Test Game - Room ${currentRoom}`;
+        gameTitle.textContent = `🎮 Balletje Balletje - Room ${currentRoom}`;
     }
     
     // Show the game interface
@@ -448,25 +448,51 @@ function updateGameScreen(data) {
             startGameTimer(currentGame.timeRemaining || 15000);
         }
     } else {
-        // Show basic game screen (fallback)
+        // Show basic game screen (fallback) - Balletje Balletje
         gameContent.innerHTML = `
             <div class="game-question">
-                <h3>🎯 Simple Test Game</h3>
+                <h3>🎯 Balletje Balletje</h3>
                 <p>Room: <strong>${currentRoom}</strong></p>
                 <p>Players: <strong>${data.players.length}</strong></p>
-                <p>This is a simple multiplayer test game!</p>
+                <p>Waar zit het balletje onder?</p>
                 
-                <div class="game-round">
-                    <h4>Current Round: 1</h4>
-                    <p class="round-instruction">Say your name</p>
+                <div class="beker-container">
+                    <div class="beker-option" onclick="selectAnswer(0)">
+                        <div class="beker">
+                            <div class="beker-top">Beker 1</div>
+                            <div class="beker-body"></div>
+                        </div>
+                        <div class="vote-indicators" id="votes-0">
+                            <!-- Votes will be shown here -->
+                        </div>
+                    </div>
+                    
+                    <div class="beker-option" onclick="selectAnswer(1)">
+                        <div class="beker">
+                            <div class="beker-top">Beker 2</div>
+                            <div class="beker-body"></div>
+                        </div>
+                        <div class="vote-indicators" id="votes-1">
+                            <!-- Votes will be shown here -->
+                        </div>
+                    </div>
+                    
+                    <div class="beker-option" onclick="selectAnswer(2)">
+                        <div class="beker">
+                            <div class="beker-top">Beker 3</div>
+                            <div class="beker-body"></div>
+                        </div>
+                        <div class="vote-indicators" id="votes-2">
+                            <!-- Votes will be shown here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="player-votes" id="playerVotes">
+                    <!-- Player votes will be shown here -->
                 </div>
                 
                 <div class="game-actions">
-                    <button class="glass-button primary" onclick="nextRound()">
-                        <span class="button-icon">▶️</span>
-                        <span class="button-text">Next Round</span>
-                    </button>
-                    
                     <button class="glass-button secondary" onclick="backToLobby()">
                         <span class="button-icon">🏠</span>
                         <span class="button-text">Back to Lobby</span>
@@ -738,58 +764,8 @@ function showJoinForm() {
 function nextRound() {
     console.log('🎮 Next round requested');
     
-    // Simple test game rounds
-    const rounds = [
-        "Say your name",
-        "Count to 5",
-        "Say 'Hello World'",
-        "Wave your hand",
-        "Smile!"
-    ];
-    
-    // Get current round (simple counter for now)
-    const currentRound = Math.floor(Math.random() * rounds.length) + 1;
-    const roundInstruction = rounds[currentRound - 1];
-    
-    const gameContent = document.getElementById('gameContent');
-    if (gameContent) {
-        gameContent.innerHTML = `
-            <div class="game-question">
-                <h3>🎯 Simple Test Game</h3>
-                <p>Room: <strong>${currentRoom}</strong></p>
-                <p>Players: <strong>${currentRoomData ? currentRoomData.players.length : 0}</strong></p>
-                
-                <div class="game-round">
-                    <h4>Current Round: ${currentRound}</h4>
-                    <p class="round-instruction">${roundInstruction}</p>
-                </div>
-                
-                <div class="players-list">
-                    <h4>Players in this round:</h4>
-                    ${currentRoomData ? currentRoomData.players.map(player => `
-                        <div class="player-in-round">
-                            <span class="player-avatar">${player.avatar}</span>
-                            <span class="player-name">${player.name}</span>
-                        </div>
-                    `).join('') : ''}
-                </div>
-                
-                <div class="game-actions">
-                    <button class="glass-button primary" onclick="nextRound()">
-                        <span class="button-icon">▶️</span>
-                        <span class="button-text">Next Round</span>
-                    </button>
-                    
-                    <button class="glass-button secondary" onclick="backToLobby()">
-                        <span class="button-icon">🏠</span>
-                        <span class="button-text">Back to Lobby</span>
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-    
-    showNotification(`Round ${currentRound}: ${roundInstruction}`, 'info');
+    // For Balletje Balletje, rounds advance automatically
+    showNotification('Rounds advance automatically! Wait for the next question.', 'info');
 }
 
 // Simple test game - no voting needed
