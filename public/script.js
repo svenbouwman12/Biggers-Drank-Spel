@@ -217,6 +217,15 @@ function showLobby(room) {
         playerCountElement.textContent = room.playerCount || room.players.length;
     }
     
+    // Show/hide leave button based on host status
+    const currentPlayer = JSON.parse(localStorage.getItem('currentPlayer') || '{}');
+    const leaveBtn = document.getElementById('leaveLobbyBtn');
+    
+    if (leaveBtn) {
+        // Always show leave button for now - players can leave anytime
+        leaveBtn.style.display = 'inline-flex';
+    }
+    
     // Update players grid
     const playersGrid = document.getElementById('playersGrid');
     if (playersGrid) {
@@ -1180,6 +1189,62 @@ async function confirmQuickJoin() {
         console.error('❌ Error joining room:', error);
         showNotification(`Kon niet joinen: ${error.message}`, 'error');
         // Don't reset selectedRoomCode on error so user can try again
+    }
+}
+
+// Leave lobby function
+async function leaveLobby() {
+    const currentPlayer = JSON.parse(localStorage.getItem('currentPlayer') || '{}');
+    const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+    
+    if (!currentPlayer.id || !currentRoom.code) {
+        showNotification('Geen actieve lobby gevonden!', 'error');
+        return;
+    }
+    
+    console.log(`🚪 Leaving lobby ${currentRoom.code} as ${currentPlayer.name}`);
+    
+    try {
+        // Show loading
+        showNotification('Verlaten van lobby...', 'info');
+        
+        const response = await fetch('/api/room/leave', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                roomCode: currentRoom.code,
+                playerId: currentPlayer.id
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to leave room');
+        }
+        
+        const data = await response.json();
+        console.log('✅ Left room successfully:', data);
+        
+        // Clear local storage
+        localStorage.removeItem('currentPlayer');
+        localStorage.removeItem('currentRoom');
+        
+        // Stop polling
+        stopPolling();
+        
+        // Show success message
+        showNotification('Lobby verlaten!', 'success');
+        
+        // Refresh page after a short delay
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500);
+        
+    } catch (error) {
+        console.error('❌ Error leaving room:', error);
+        showNotification(`Kon lobby niet verlaten: ${error.message}`, 'error');
     }
 }
 
