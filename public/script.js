@@ -359,6 +359,28 @@ function showHome() {
     showScreen('homeScreen');
 }
 
+function showHostForm() {
+    showScreen('hostForm');
+}
+
+function showJoinForm() {
+    showScreen('joinForm');
+}
+
+function nextRound() {
+    console.log('🎮 Next round requested');
+    showNotification('Next round functionality coming soon!', 'info');
+}
+
+function backToLobby() {
+    console.log('🏠 Back to lobby requested');
+    if (currentRoom) {
+        showScreen('lobbyScreen');
+    } else {
+        showHome();
+    }
+}
+
 function showLoading(message = 'Loading...') {
     const loading = document.getElementById('loadingOverlay');
     const loadingText = document.getElementById('loadingText');
