@@ -265,8 +265,34 @@ function resetScoreboard() {
 // SPEL STARTERS
 // ============================================================================
 
+function initializeSinglePlayerMode() {
+    console.log('👥 Initializing single player mode');
+    
+    // Create players based on settings
+    gameState.players = [];
+    
+    for (let i = 0; i < gameState.settings.playerCount; i++) {
+        const player = {
+            id: `player_${i + 1}`,
+            name: gameState.settings.playerNames[i] || `Speler ${i + 1}`,
+            score: 0,
+            isHost: i === 0 // First player is host
+        };
+        gameState.players.push(player);
+        console.log(`👤 Created player: ${player.name} (${player.id})`);
+    }
+    
+    console.log(`👥 Initialized ${gameState.players.length} players for single player mode`);
+}
+
 function startGame(gameType) {
     gameState.currentGame = gameType;
+    
+    // Initialize players for single player mode if not already set
+    if (!gameState.isMultiplayer && gameState.players.length === 0) {
+        console.log('👥 Initializing players for single player mode');
+        initializeSinglePlayerMode();
+    }
     
     console.log(`🎮 Game state:`, gameState);
     console.log(`🎮 Race state:`, raceState);
@@ -373,13 +399,27 @@ function placeBet(suit) {
     // Get current player (for single player mode, use first player)
     const currentPlayer = gameState.players[0];
     if (!currentPlayer) {
-        console.log('❌ No current player found');
-        return;
+        console.log('❌ No current player found, initializing players...');
+        // Try to initialize players if they don't exist
+        if (!gameState.isMultiplayer) {
+            initializeSinglePlayerMode();
+            const newCurrentPlayer = gameState.players[0];
+            if (!newCurrentPlayer) {
+                console.log('❌ Still no current player found after initialization');
+                return;
+            }
+            // Use the newly created player
+            raceState.playerBets[newCurrentPlayer.id] = suit;
+            console.log(`💰 ${newCurrentPlayer.name} bet on ${suit}`);
+        } else {
+            console.log('❌ No current player found in multiplayer mode');
+            return;
+        }
+    } else {
+        // Place the bet
+        raceState.playerBets[currentPlayer.id] = suit;
+        console.log(`💰 ${currentPlayer.name} bet on ${suit}`);
     }
-    
-    // Place the bet
-    raceState.playerBets[currentPlayer.id] = suit;
-    console.log(`💰 ${currentPlayer.name} bet on ${suit}`);
     
     // Update UI
     updateBetCounts();
