@@ -24,8 +24,10 @@ const io = socketIo(server, {
         origin: "*",
         methods: ["GET", "POST"]
     },
-    transports: ['polling', 'websocket'],
-    allowEIO3: true
+    transports: ['polling'],
+    allowEIO3: true,
+    pingTimeout: 60000,
+    pingInterval: 25000
 });
 
 // Middleware

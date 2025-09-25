@@ -40,18 +40,42 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================================================
 
 function initializeSocket() {
-    socket = io();
-    
-    // Connection events
-    socket.on('connect', () => {
-        console.log('🔌 Connected to server');
-        hideLoading();
-    });
-    
-    socket.on('disconnect', () => {
-        console.log('🔌 Disconnected from server');
-        showNotification('Connection lost. Reconnecting...', 'error');
-    });
+    try {
+        socket = io({
+            transports: ['polling'],
+            timeout: 10000,
+            forceNew: true
+        });
+        
+        // Connection events
+        socket.on('connect', () => {
+            console.log('🔌 Connected to server');
+            hideLoading();
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('🔌 Disconnected from server');
+            showNotification('Connection lost. Reconnecting...', 'error');
+        });
+        
+        socket.on('connect_error', (error) => {
+            console.error('❌ Connection error:', error);
+            showNotification('Connection failed. Trying alternative method...', 'error');
+            // Fallback to API-based system after 3 seconds
+            setTimeout(() => {
+                if (!socket.connected) {
+                    console.log('🔄 Switching to API-based system');
+                    initializeAPIFallback();
+                }
+            }, 3000);
+        });
+        
+    } catch (error) {
+        console.error('❌ Failed to initialize socket:', error);
+        showNotification('Socket connection failed. Using API mode...', 'error');
+        initializeAPIFallback();
+    }
+}
     
     // Room events
     socket.on('roomCreated', handleRoomCreated);
@@ -680,6 +704,164 @@ function createConfetti() {
             confetti.remove();
         }, 5000);
     }
+}
+
+// ============================================================================
+// API FALLBACK SYSTEM
+// ============================================================================
+
+let apiMode = false;
+let pollingInterval = null;
+
+function initializeAPIFallback() {
+    console.log('🔄 Initializing API fallback system');
+    apiMode = true;
+    hideLoading();
+    showNotification('Using API mode for better compatibility', 'info');
+    
+    // Update form handlers to use API
+    setupAPIFormHandlers();
+}
+
+function setupAPIFormHandlers() {
+    // Override form handlers to use API instead of Socket.IO
+    document.getElementById('hostGameForm').removeEventListener('submit', handleHostSubmit);
+    document.getElementById('joinGameForm').removeEventListener('submit', handleJoinSubmit);
+    
+    document.getElementById('hostGameForm').addEventListener('submit', handleHostSubmitAPI);
+    document.getElementById('joinGameForm').addEventListener('submit', handleJoinSubmitAPI);
+}
+
+async function handleHostSubmitAPI(e) {
+    e.preventDefault();
+    
+    const hostName = document.getElementById('hostName').value.trim();
+    const gameType = document.getElementById('gameType').value;
+    
+    if (!hostName) {
+        showNotification('Please enter your name', 'error');
+        return;
+    }
+    
+    showLoading('Creating room...');
+    
+    try {
+        const response = await fetch('/api/room/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ hostName, gameType })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to create room');
+        }
+        
+        const data = await response.json();
+        console.log('🏠 Room created via API:', data);
+        
+        currentRoom = data.roomCode;
+        currentPlayer = {
+            id: 'api_' + Date.now(),
+            name: hostName,
+            isHost: true
+        };
+        
+        hideLoading();
+        showLobby(data.room);
+        generateQRCode(data.roomCode);
+        
+        // Start polling for updates
+        startPolling(data.roomCode);
+        
+    } catch (error) {
+        console.error('❌ Error creating room:', error);
+        hideLoading();
+        showNotification('Failed to create room', 'error');
+    }
+}
+
+async function handleJoinSubmitAPI(e) {
+    e.preventDefault();
+    
+    const playerName = document.getElementById('playerName').value.trim();
+    const roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
+    
+    if (!playerName || !roomCode) {
+        showNotification('Please enter your name and room code', 'error');
+        return;
+    }
+    
+    showLoading('Joining room...');
+    
+    try {
+        const response = await fetch('/api/room/join', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ roomCode, playerName })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to join room');
+        }
+        
+        const data = await response.json();
+        console.log('👤 Player joined via API:', data);
+        
+        currentRoom = roomCode;
+        currentPlayer = {
+            id: 'api_' + Date.now(),
+            name: playerName,
+            isHost: false
+        };
+        
+        hideLoading();
+        showLobby(data.room);
+        
+        // Start polling for updates
+        startPolling(roomCode);
+        
+    } catch (error) {
+        console.error('❌ Error joining room:', error);
+        hideLoading();
+        showNotification(error.message || 'Failed to join room', 'error');
+    }
+}
+
+function startPolling(roomCode) {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+    }
+    
+    pollingInterval = setInterval(async () => {
+        try {
+            const response = await fetch(`/api/room/${roomCode}`);
+            if (response.ok) {
+                const data = await response.json();
+                updateLobby(data);
+            }
+        } catch (error) {
+            console.error('Polling error:', error);
+        }
+    }, 2000); // Poll every 2 seconds
+}
+
+function stopPolling() {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+}
+
+// Override leaveLobby to stop polling
+const originalLeaveLobby = leaveLobby;
+function leaveLobby() {
+    stopPolling();
+    originalLeaveLobby();
 }
 
 // ============================================================================
