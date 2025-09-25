@@ -1,0 +1,33 @@
+{
+  "name": "drankspel-multiplayer",
+  "version": "1.0.0",
+  "description": "Multiplayer online drankspel met lobby, join-code en mini-games",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "drankspel",
+    "multiplayer",
+    "socket.io",
+    "node.js",
+    "party-game",
+    "lobby",
+    "mini-games"
+  ],
+  "author": "Rene van der Werff",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "qrcode": "^1.5.3",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

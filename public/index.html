@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drankspel Multiplayer 🎉🍻</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍻</text></svg>">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Background Effects -->
+        <div class="background-effects">
+            <div class="bubble bubble-1"></div>
+            <div class="bubble bubble-2"></div>
+            <div class="bubble bubble-3"></div>
+            <div class="bubble bubble-4"></div>
+        </div>
+
+        <!-- Home Screen -->
+        <div id="homeScreen" class="screen active">
+            <div class="glass-container">
+                <div class="header">
+                    <h1 class="title">🍻 Drankspel Multiplayer</h1>
+                    <p class="subtitle">Host een game of join met een code!</p>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="glass-button primary" onclick="showHostForm()">
+                        <span class="button-icon">🏠</span>
+                        <span class="button-text">Host Game</span>
+                    </button>
+                    
+                    <button class="glass-button secondary" onclick="showJoinForm()">
+                        <span class="button-icon">🚪</span>
+                        <span class="button-text">Join Game</span>
+                    </button>
+                </div>
+
+                <div class="features">
+                    <div class="feature-item">
+                        <span class="feature-icon">🎮</span>
+                        <span>Mini-games</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">👥</span>
+                        <span>Multiplayer</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">📱</span>
+                        <span>Mobile Ready</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Host Form -->
+        <div id="hostForm" class="screen">
+            <div class="glass-container">
+                <div class="form-header">
+                    <button class="back-button" onclick="showHome()">←</button>
+                    <h2>🏠 Host een Game</h2>
+                </div>
+
+                <form id="hostGameForm" class="glass-form">
+                    <div class="form-group">
+                        <label for="hostName">Jouw naam</label>
+                        <input type="text" id="hostName" placeholder="Voer je naam in" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gameType">Game Type</label>
+                        <select id="gameType">
+                            <option value="mixed">🎲 Mixed (Alles)</option>
+                            <option value="mostLikelyTo">🗳️ Most Likely To</option>
+                            <option value="truthOrDrink">🍺 Truth or Drink</option>
+                            <option value="speedTap">⚡ Speed Tap</option>
+                            <option value="quiz">🧠 Quiz</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="glass-button primary">
+                        <span class="button-icon">🚀</span>
+                        <span class="button-text">Start Game</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Join Form -->
+        <div id="joinForm" class="screen">
+            <div class="glass-container">
+                <div class="form-header">
+                    <button class="back-button" onclick="showHome()">←</button>
+                    <h2>🚪 Join een Game</h2>
+                </div>
+
+                <form id="joinGameForm" class="glass-form">
+                    <div class="form-group">
+                        <label for="playerName">Jouw naam</label>
+                        <input type="text" id="playerName" placeholder="Voer je naam in" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="roomCode">Room Code</label>
+                        <input type="text" id="roomCode" placeholder="Voer room code in" maxlength="6" required>
+                    </div>
+
+                    <button type="submit" class="glass-button primary">
+                        <span class="button-icon">🎯</span>
+                        <span class="button-text">Join Game</span>
+                    </button>
+                </form>
+
+                <div class="qr-section">
+                    <p>Of scan QR code:</p>
+                    <div id="qrCode" class="qr-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobbyScreen" class="screen">
+            <div class="glass-container">
+                <div class="lobby-header">
+                    <h2>🏠 Lobby</h2>
+                    <div class="room-info">
+                        <span class="room-code">Room: <strong id="currentRoomCode"></strong></span>
+                        <span class="player-count">Spelers: <span id="playerCount">0</span></span>
+                    </div>
+                </div>
+
+                <div class="players-grid" id="playersGrid">
+                    <!-- Players will be added dynamically -->
+                </div>
+
+                <div class="lobby-actions">
+                    <button id="startGameBtn" class="glass-button primary" onclick="startGame()">
+                        <span class="button-icon">🚀</span>
+                        <span class="button-text">Start Game</span>
+                    </button>
+                    
+                    <button class="glass-button secondary" onclick="leaveLobby()">
+                        <span class="button-icon">🚪</span>
+                        <span class="button-text">Leave Lobby</span>
+                    </button>
+                </div>
+
+                <div class="qr-lobby">
+                    <p>Deel deze QR code:</p>
+                    <div id="lobbyQrCode" class="qr-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <div class="glass-container">
+                <div class="game-header">
+                    <h2 id="gameTitle">🎮 Game</h2>
+                    <div class="game-info">
+                        <span class="round-info">Round <span id="currentRound">1</span></span>
+                        <span class="timer" id="gameTimer">30</span>
+                    </div>
+                </div>
+
+                <div class="game-content" id="gameContent">
+                    <!-- Game content will be loaded dynamically -->
+                </div>
+
+                <div class="game-actions" id="gameActions">
+                    <!-- Game actions will be loaded dynamically -->
+                </div>
+
+                <div class="scores-board" id="scoresBoard">
+                    <!-- Scores will be displayed here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="resultsScreen" class="screen">
+            <div class="glass-container">
+                <div class="results-header">
+                    <h2>🏆 Results</h2>
+                </div>
+
+                <div class="results-content" id="resultsContent">
+                    <!-- Results will be displayed here -->
+                </div>
+
+                <div class="results-actions">
+                    <button class="glass-button primary" onclick="nextRound()">
+                        <span class="button-icon">➡️</span>
+                        <span class="button-text">Next Round</span>
+                    </button>
+                    
+                    <button class="glass-button secondary" onclick="backToLobby()">
+                        <span class="button-icon">🏠</span>
+                        <span class="button-text">Back to Lobby</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Connecting...</p>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        <span id="notificationText"></span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

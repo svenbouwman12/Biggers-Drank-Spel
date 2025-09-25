@@ -1,0 +1,752 @@
+/* ============================================================================
+   DRANKSPEL MULTIPLAYER - Glass/Liquid Design CSS
+   ============================================================================ */
+
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    min-height: 100vh;
+    color: #fff;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Background Effects */
+.background-effects {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    animation: float 6s ease-in-out infinite;
+}
+
+.bubble-1 {
+    width: 80px;
+    height: 80px;
+    top: 20%;
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.bubble-2 {
+    width: 120px;
+    height: 120px;
+    top: 60%;
+    right: 15%;
+    animation-delay: 2s;
+}
+
+.bubble-3 {
+    width: 60px;
+    height: 60px;
+    top: 80%;
+    left: 20%;
+    animation-delay: 4s;
+}
+
+.bubble-4 {
+    width: 100px;
+    height: 100px;
+    top: 40%;
+    right: 30%;
+    animation-delay: 1s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+}
+
+/* App Container */
+.app-container {
+    position: relative;
+    z-index: 2;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+/* Screen Management */
+.screen {
+    display: none;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.screen.active {
+    display: block;
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(30px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+/* Glass Container */
+.glass-container {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.glass-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+}
+
+/* Typography */
+.title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #fff, #f0f0f0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.subtitle {
+    font-size: 1.1rem;
+    text-align: center;
+    opacity: 0.9;
+    margin-bottom: 40px;
+    font-weight: 300;
+}
+
+/* Buttons */
+.glass-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 15px 30px;
+    border-radius: 15px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.glass-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.glass-button:hover::before {
+    left: 100%;
+}
+
+.glass-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.glass-button:active {
+    transform: translateY(0);
+}
+
+.glass-button.primary {
+    background: linear-gradient(135deg, rgba(0, 184, 148, 0.3), rgba(0, 150, 136, 0.3));
+    border-color: rgba(0, 184, 148, 0.4);
+}
+
+.glass-button.secondary {
+    background: linear-gradient(135deg, rgba(116, 185, 255, 0.3), rgba(52, 152, 219, 0.3));
+    border-color: rgba(116, 185, 255, 0.4);
+}
+
+.button-icon {
+    font-size: 1.2rem;
+}
+
+.button-text {
+    font-weight: 600;
+}
+
+/* Action Buttons */
+.action-buttons {
+    margin-bottom: 40px;
+}
+
+/* Features */
+.features {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 30px;
+}
+
+.feature-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.feature-icon {
+    font-size: 1.5rem;
+}
+
+/* Forms */
+.glass-form {
+    margin-top: 30px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 1rem;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.form-group input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+/* Form Header */
+.form-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.form-header h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.back-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.back-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+/* Lobby */
+.lobby-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.lobby-header h2 {
+    font-size: 2rem;
+    margin-bottom: 15px;
+}
+
+.room-info {
+    display: flex;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+}
+
+.room-code {
+    font-size: 1.1rem;
+}
+
+.player-count {
+    font-size: 1.1rem;
+}
+
+/* Players Grid */
+.players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.player-card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.player-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.player-card.host {
+    border-color: rgba(0, 184, 148, 0.5);
+    background: rgba(0, 184, 148, 0.1);
+}
+
+.player-avatar {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.player-name {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.player-status {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+/* Lobby Actions */
+.lobby-actions {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.lobby-actions .glass-button {
+    margin-bottom: 0;
+}
+
+/* QR Code */
+.qr-section,
+.qr-lobby {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.qr-container {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Game Screen */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.game-header h2 {
+    font-size: 1.8rem;
+}
+
+.game-info {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.round-info {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+.timer {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Game Content */
+.game-content {
+    margin-bottom: 30px;
+}
+
+.game-question {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 30px;
+}
+
+.game-question h3 {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+.game-options {
+    display: grid;
+    gap: 15px;
+}
+
+.game-option {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.game-option:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.game-option.selected {
+    border-color: rgba(0, 184, 148, 0.5);
+    background: rgba(0, 184, 148, 0.1);
+}
+
+/* Game Actions */
+.game-actions {
+    margin-bottom: 30px;
+}
+
+/* Scores Board */
+.scores-board {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.scores-board h3 {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.score-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.score-item:last-child {
+    border-bottom: none;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.player-score {
+    font-weight: bold;
+    color: #00b894;
+}
+
+/* Results */
+.results-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.results-header h2 {
+    font-size: 2rem;
+    margin-bottom: 15px;
+}
+
+.results-content {
+    margin-bottom: 30px;
+}
+
+.winner-display {
+    background: linear-gradient(135deg, rgba(0, 184, 148, 0.3), rgba(0, 150, 136, 0.3));
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 184, 148, 0.4);
+}
+
+.winner-display h3 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.results-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.results-actions .glass-button {
+    margin-bottom: 0;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-overlay p {
+    font-size: 1.2rem;
+    color: #fff;
+}
+
+/* Notification */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 15px 25px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 1001;
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .app-container {
+        padding: 10px;
+    }
+    
+    .glass-container {
+        padding: 30px 20px;
+    }
+    
+    .title {
+        font-size: 2rem;
+    }
+    
+    .lobby-actions,
+    .results-actions {
+        flex-direction: column;
+    }
+    
+    .players-grid {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 10px;
+    }
+    
+    .player-card {
+        padding: 15px;
+    }
+    
+    .game-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .game-info {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .glass-container {
+        padding: 20px 15px;
+    }
+    
+    .title {
+        font-size: 1.8rem;
+    }
+    
+    .glass-button {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+    }
+    
+    .players-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .room-info {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.slide-up {
+    animation: slideUp 0.5s ease-out;
+}
+
+/* Confetti Effect */
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background: #f39c12;
+    animation: confetti-fall 3s linear infinite;
+}
+
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(-100vh) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
