@@ -803,6 +803,12 @@ function backToLobby() {
 let lobbiesData = [];
 let lobbyRefreshInterval = null;
 
+// Hide all screens
+function hideAllScreens() {
+    const screens = document.querySelectorAll('.screen');
+    screens.forEach(screen => screen.classList.remove('active'));
+}
+
 function showLobbyBrowser() {
     console.log('📋 Showing lobby browser');
     hideAllScreens();
