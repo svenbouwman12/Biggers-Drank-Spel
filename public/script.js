@@ -185,24 +185,33 @@ function showLobby(room) {
     currentRoomData = room;
     
     // Update lobby display
-    document.getElementById('lobbyRoomCode').textContent = room.code;
-    document.getElementById('lobbyHostName').textContent = room.hostName;
-    document.getElementById('lobbyPlayerCount').textContent = `${room.playerCount}/8`;
+    const roomCodeElement = document.getElementById('currentRoomCode');
+    const playerCountElement = document.getElementById('playerCount');
     
-    // Update players list
-    const playersList = document.getElementById('playersList');
-    playersList.innerHTML = '';
+    if (roomCodeElement) {
+        roomCodeElement.textContent = room.code;
+    }
     
-    room.players.forEach(player => {
-        const playerElement = document.createElement('div');
-        playerElement.className = 'player-item';
-        playerElement.innerHTML = `
-            <span class="player-avatar">${player.avatar}</span>
-            <span class="player-name">${player.name}</span>
-            ${player.isHost ? '<span class="host-badge">Host</span>' : ''}
-        `;
-        playersList.appendChild(playerElement);
-    });
+    if (playerCountElement) {
+        playerCountElement.textContent = room.playerCount;
+    }
+    
+    // Update players grid
+    const playersGrid = document.getElementById('playersGrid');
+    if (playersGrid) {
+        playersGrid.innerHTML = '';
+        
+        room.players.forEach(player => {
+            const playerElement = document.createElement('div');
+            playerElement.className = 'player-item';
+            playerElement.innerHTML = `
+                <span class="player-avatar">${player.avatar}</span>
+                <span class="player-name">${player.name}</span>
+                ${player.isHost ? '<span class="host-badge">Host</span>' : ''}
+            `;
+            playersGrid.appendChild(playerElement);
+        });
+    }
     
     // Update start button
     updateStartButton(room);
@@ -437,10 +446,9 @@ async function generateQRCode(roomCode) {
         const response = await fetch(`/api/qr/${roomCode}`);
         if (response.ok) {
             const data = await response.json();
-            const qrImage = document.getElementById('qrCode');
-            if (qrImage) {
-                qrImage.src = data.qrCode;
-                qrImage.style.display = 'block';
+            const qrContainer = document.getElementById('lobbyQrCode');
+            if (qrContainer) {
+                qrContainer.innerHTML = `<img src="${data.qrCode}" alt="QR Code for room ${roomCode}" />`;
             }
         }
     } catch (error) {
