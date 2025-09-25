@@ -445,7 +445,7 @@ function updateGameScreen(data) {
         
         // Start timer if question phase
         if (currentGame.phase === 'question') {
-            startGameTimer(currentGame.timeRemaining || 15000);
+            startGameTimer(currentGame.timeRemaining || 10000);
         }
     } else {
         // Show basic game screen (fallback) - Balletje Balletje
@@ -492,6 +492,11 @@ function updateGameScreen(data) {
                     <!-- Player votes will be shown here -->
                 </div>
                 
+                <div class="game-timer">
+                    <div class="timer-label">Time remaining:</div>
+                    <div class="timer-value" id="timeRemaining">10s</div>
+                </div>
+                
                 <div class="game-actions">
                     <button class="glass-button secondary" onclick="backToLobby()">
                         <span class="button-icon">🏠</span>
@@ -500,21 +505,30 @@ function updateGameScreen(data) {
                 </div>
             </div>
         `;
+        
+        // Start timer for fallback interface
+        startGameTimer(10000);
     }
 }
 
 function startGameTimer(duration) {
+    // Clear any existing timer
+    if (window.gameTimer) {
+        clearInterval(window.gameTimer);
+    }
+    
     const timerElement = document.getElementById('timeRemaining');
     if (!timerElement) return;
     
     let timeLeft = Math.ceil(duration / 1000);
+    timerElement.textContent = `${timeLeft}s`;
     
-    const timer = setInterval(() => {
-        timerElement.textContent = `${timeLeft}s`;
+    window.gameTimer = setInterval(() => {
         timeLeft--;
+        timerElement.textContent = `${timeLeft}s`;
         
-        if (timeLeft < 0) {
-            clearInterval(timer);
+        if (timeLeft <= 0) {
+            clearInterval(window.gameTimer);
             timerElement.textContent = '0s';
         }
     }, 1000);

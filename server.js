@@ -139,7 +139,7 @@ function startNextRound(roomCode) {
     // Auto-advance after 15 seconds (shorter for faster gameplay)
     setTimeout(() => {
         advanceToResults(roomCode);
-    }, 15000); // 15 seconds per question
+    }, 10000); // 10 seconds per question
 }
 
 function advanceToResults(roomCode) {
@@ -560,7 +560,7 @@ app.get('/api/room/:roomCode', async (req, res) => {
         
         if (currentGame && currentGame.isActive) {
             const timeRemaining = currentGame.phase === 'question' ? 
-                Math.max(0, 15000 - (Date.now() - currentGame.roundStartTime)) : 
+                Math.max(0, 10000 - (Date.now() - currentGame.roundStartTime)) : 
                 Math.max(0, 8000 - (Date.now() - currentGame.roundStartTime));
                 
             roomResponse.currentGame = {
