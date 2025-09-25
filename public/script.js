@@ -805,6 +805,7 @@ function backToLobby() {
 // Global variables for lobby browser
 let lobbiesData = [];
 let lobbyRefreshInterval = null;
+let selectedRoomCode = null;
 
 // Hide all screens
 function hideAllScreens() {
@@ -1052,16 +1053,110 @@ function renderLobbies() {
 function selectLobby(roomCode) {
     console.log(`🎯 Selected lobby: ${roomCode}`);
     
-    // Pre-fill room code in join form
-    const roomCodeInput = document.getElementById('roomCode');
-    if (roomCodeInput) {
-        roomCodeInput.value = roomCode;
+    // Store the selected room code and show popup
+    selectedRoomCode = roomCode;
+    showQuickJoinPopup();
+}
+
+// Quick Join Popup Functions
+function showQuickJoinPopup() {
+    const popup = document.getElementById('quickJoinPopup');
+    const nameInput = document.getElementById('quickJoinName');
+    
+    if (popup) {
+        popup.classList.remove('hidden');
+        // Focus on name input after popup appears
+        setTimeout(() => {
+            if (nameInput) {
+                nameInput.focus();
+            }
+        }, 100);
+        console.log(`🚀 Quick join popup shown for room: ${selectedRoomCode}`);
+    }
+}
+
+function closeQuickJoinPopup() {
+    const popup = document.getElementById('quickJoinPopup');
+    const nameInput = document.getElementById('quickJoinName');
+    
+    if (popup) {
+        popup.classList.add('hidden');
     }
     
-    // Go back to join form
-    showJoinForm();
+    if (nameInput) {
+        nameInput.value = '';
+    }
     
-    showNotification(`Lobby ${roomCode} geselecteerd!`, 'success');
+    selectedRoomCode = null;
+    console.log('❌ Quick join popup closed');
+}
+
+function handleQuickJoinKeyPress(event) {
+    if (event.key === 'Enter') {
+        confirmQuickJoin();
+    }
+}
+
+async function confirmQuickJoin() {
+    const nameInput = document.getElementById('quickJoinName');
+    const playerName = nameInput?.value?.trim();
+    
+    if (!playerName) {
+        showNotification('Voer je naam in!', 'error');
+        return;
+    }
+    
+    if (!selectedRoomCode) {
+        showNotification('Geen lobby geselecteerd!', 'error');
+        return;
+    }
+    
+    console.log(`🚀 Joining room ${selectedRoomCode} as ${playerName}`);
+    
+    try {
+        // Close popup first
+        closeQuickJoinPopup();
+        
+        // Show loading
+        showNotification('Joining lobby...', 'info');
+        
+        // Join the room
+        const response = await fetch('/api/room/join', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                roomCode: selectedRoomCode,
+                playerName: playerName
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to join room');
+        }
+        
+        const data = await response.json();
+        console.log('✅ Joined room successfully:', data);
+        
+        // Store player and room info
+        localStorage.setItem('currentPlayer', JSON.stringify(data.player));
+        localStorage.setItem('currentRoom', JSON.stringify(data.room));
+        
+        // Show success and go to lobby
+        showNotification(`Welkom in lobby ${selectedRoomCode}!`, 'success');
+        
+        // Start polling for this room
+        startPolling(data.room.code);
+        
+        // Show lobby screen
+        showLobby(data.room);
+        
+    } catch (error) {
+        console.error('❌ Error joining room:', error);
+        showNotification(`Kon niet joinen: ${error.message}`, 'error');
+    }
 }
 
 // Utility functions for lobby browser

@@ -175,6 +175,40 @@
             </div>
         </div>
 
+        <!-- Quick Join Popup -->
+        <div id="quickJoinPopup" class="popup-overlay hidden">
+            <div class="popup-content">
+                <div class="popup-header">
+                    <h3>🚀 Join Lobby</h3>
+                    <button class="popup-close" onclick="closeQuickJoinPopup()">×</button>
+                </div>
+                
+                <div class="popup-body">
+                    <p class="popup-description">Voer je naam in om te joinen:</p>
+                    <div class="form-group">
+                        <input 
+                            type="text" 
+                            id="quickJoinName" 
+                            placeholder="Jouw naam" 
+                            maxlength="20"
+                            class="glass-input"
+                            onkeypress="handleQuickJoinKeyPress(event)"
+                        >
+                    </div>
+                </div>
+                
+                <div class="popup-footer">
+                    <button class="glass-button secondary" onclick="closeQuickJoinPopup()">
+                        <span class="button-text">Annuleren</span>
+                    </button>
+                    <button class="glass-button primary" onclick="confirmQuickJoin()">
+                        <span class="button-icon">🚀</span>
+                        <span class="button-text">Join</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Lobby Screen -->
         <div id="lobbyScreen" class="screen">
             <div class="glass-container">
