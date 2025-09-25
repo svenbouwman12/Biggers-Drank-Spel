@@ -1226,109 +1226,45 @@ app.get('/api/lobbies/test', async (req, res) => {
     }
 });
 
-// Leave room API
+// Leave room API - Simplified version
 app.post('/api/room/leave', async (req, res) => {
     try {
         console.log('📥 Leave request body:', req.body);
-        console.log('📥 Leave request headers:', req.headers);
         
         const { roomCode, playerId } = req.body;
         console.log(`🚪 Leave request for room: "${roomCode}", player: "${playerId}"`);
         
         if (!roomCode || !playerId) {
-            console.log('❌ Missing roomCode or playerId - roomCode:', roomCode, 'playerId:', playerId);
+            console.log('❌ Missing roomCode or playerId');
             return res.status(400).json({ error: 'Room code and player ID are required' });
         }
         
-        // Try to get room from memory first
-        let room = rooms.get(roomCode);
-        
-        if (room) {
-            // Remove player from memory
-            const player = room.players.get(playerId);
-            if (player) {
-                room.players.delete(playerId);
-                room.scores.delete(playerId);
-                console.log(`👤 Player ${player.name} left room ${roomCode} (memory)`);
-            }
-        }
-        
-        // Update database - mark player as left
-        // First get the room ID from the room code
-        const { data: roomData, error: roomError } = await supabase
-            .from('rooms')
-            .select('id')
-            .eq('code', roomCode)
-            .single();
-            
-        if (roomError || !roomData) {
-            console.error('❌ Error finding room:', roomError);
-            return res.status(404).json({ error: 'Room not found' });
-        }
-        
+        // Simple approach: just mark player as left
         const { error: updateError } = await supabase
             .from('players')
             .update({ left_at: new Date().toISOString() })
-            .eq('socket_id', playerId)
-            .eq('room_id', roomData.id);
+            .eq('socket_id', playerId);
             
         if (updateError) {
             console.error('❌ Error updating player leave status:', updateError);
+            return res.status(500).json({ error: 'Failed to update player status', details: updateError.message });
         }
         
-        // Update current_players count in rooms table
-        // Count remaining players
-        const { data: remainingPlayers, error: countError } = await supabase
-            .from('players')
-            .select('id')
-            .eq('room_id', roomData.id)
-            .is('left_at', null);
-                
-        let playerCount = 0;
-        let roomDeleted = false;
+        console.log(`✅ Player ${playerId} marked as left from room ${roomCode}`);
         
-        if (!countError) {
-            playerCount = remainingPlayers?.length || 0;
-            
-            // Update player count
-            await supabase
-                .from('rooms')
-                .update({ current_players: playerCount })
-                .eq('code', roomCode);
-                
-            console.log(`📊 Updated room ${roomCode} player count to: ${playerCount}`);
-            
-            // If no players left, delete the room
-            if (playerCount === 0) {
-                console.log(`🗑️ Room ${roomCode} is empty, deleting...`);
-                
-                // Delete all players first
-                await supabase
-                    .from('players')
-                    .delete()
-                    .eq('room_id', roomData.id);
-                
-                // Delete the room
-                await supabase
-                    .from('rooms')
-                    .delete()
-                    .eq('code', roomCode);
-                    
-                // Remove from memory
-                rooms.delete(roomCode);
-                
-                roomDeleted = true;
-                console.log(`✅ Room ${roomCode} deleted from database and memory`);
-            }
-        } else {
-            console.error('❌ Error counting remaining players:', countError);
+        // Remove from memory if exists
+        const room = rooms.get(roomCode);
+        if (room) {
+            room.players.delete(playerId);
+            room.scores.delete(playerId);
+            console.log(`👤 Player removed from memory`);
         }
         
         res.json({ 
             success: true, 
             message: 'Left room successfully',
-            roomDeleted: roomDeleted,
-            playerCount: playerCount
+            roomCode: roomCode,
+            playerId: playerId
         });
         
     } catch (error) {

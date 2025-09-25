@@ -1205,24 +1205,13 @@ async function leaveLobby() {
     console.log(`🚪 Leaving lobby ${currentRoom.code} as ${currentPlayer.name}`);
     
     try {
-        // Debug: Test the leave endpoint first
-        console.log('🧪 Testing leave endpoint...');
-        const debugResponse = await fetch('/api/debug/test-leave', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                roomCode: currentRoom.code,
-                playerId: currentPlayer.id
-            })
-        });
-        
-        const debugData = await debugResponse.json();
-        console.log('🧪 Debug test result:', debugData);
-        
         // Show loading
         showNotification('Verlaten van lobby...', 'info');
+        
+        console.log('📤 Sending leave request:', {
+            roomCode: currentRoom.code,
+            playerId: currentPlayer.id
+        });
         
         const response = await fetch('/api/room/leave', {
             method: 'POST',
