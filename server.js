@@ -524,16 +524,35 @@ app.post('/api/game/start', async (req, res) => {
         }
         
         // Update room status in database
-        await supabase
+        const { error: updateError } = await supabase
             .from('rooms')
             .update({ 
                 status: 'playing',
                 started_at: new Date().toISOString(),
-                game_type: gameType || 'mostLikelyTo'
+                game_type: gameType || 'simpleTest'
             })
             .eq('code', roomCode);
             
+        if (updateError) {
+            console.error('❌ Error updating room status:', updateError);
+            return res.status(500).json({ error: 'Failed to update room status' });
+        }
+            
         console.log(`🔄 Updated room ${roomCode} status to 'playing' in database`);
+
+        // Verify the database update was successful
+        const { data: verifyData, error: verifyError } = await supabase
+            .from('rooms')
+            .select('status, game_type')
+            .eq('code', roomCode)
+            .single();
+            
+        if (verifyError || !verifyData) {
+            console.error('❌ Error verifying room status update:', verifyError);
+            return res.status(500).json({ error: 'Failed to verify room status update' });
+        }
+        
+        console.log(`✅ Verified room status: ${verifyData.status}, game_type: ${verifyData.game_type}`);
 
         room.gameState = 'playing';
         room.currentGame = gameType || 'simpleTest';

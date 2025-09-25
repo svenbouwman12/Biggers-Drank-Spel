@@ -423,8 +423,17 @@ function startPolling(roomCode) {
                 
                 // Update lobby if we're in lobby screen
                 if (currentRoom === data.code) {
-                    updateLobby(data);
-                    currentRoomData = data;
+                    // Add small delay after game start to allow database sync
+                    if (data.gameState === 'playing' && currentRoomData && currentRoomData.gameState === 'lobby') {
+                        console.log('🎮 Game state changed to playing, waiting for database sync...');
+                        setTimeout(() => {
+                            updateLobby(data);
+                            currentRoomData = data;
+                        }, 1000); // 1 second delay
+                    } else {
+                        updateLobby(data);
+                        currentRoomData = data;
+                    }
                 }
             }
         } catch (error) {
