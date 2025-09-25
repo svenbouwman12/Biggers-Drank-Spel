@@ -40,7 +40,7 @@ let raceState = {
         '♦': 0, // Diamonds
         '♣': 0  // Clubs
     },
-    trackLength: 8, // Number of track cards
+    trackLength: 7, // Number of track cards (7 vertical cards as per rules)
     trackCards: [], // Cards on the track
     revealedCards: 0, // Number of revealed track cards
     drawPile: [], // Remaining cards to draw
@@ -848,9 +848,9 @@ function checkTrackCardReveal() {
 }
 
 function checkRaceWinner() {
-    // Check if any horse has reached the finish (position 8)
+    // Check if any horse has reached the finish (position 7 - after all track cards)
     for (const [suit, position] of Object.entries(raceState.horses)) {
-        if (position >= 8) {
+        if (position >= 7) {
             raceState.gameOver = true;
             raceState.winner = suit;
             console.log(`🏆 Race winner: ${suit} at position ${position}`);

@@ -708,7 +708,7 @@ h3 {
 }
 
 .track-finish {
-    grid-column: 9;
+    grid-column: 8;
     grid-row: 1;
     display: flex;
     align-items: center;
@@ -726,7 +726,7 @@ h3 {
 }
 
 .track-cards {
-    grid-column: 1 / 9;
+    grid-column: 1 / 8;
     grid-row: 1;
     display: contents;
     z-index: 5;
@@ -791,7 +791,7 @@ h3 {
 }
 
 .track-start {
-    grid-column: 1 / 9;
+    grid-column: 1 / 8;
     grid-row: 2 / 6;
     display: contents;
     z-index: 5;
