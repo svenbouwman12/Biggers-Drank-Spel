@@ -23,7 +23,9 @@ const io = socketIo(server, {
     cors: {
         origin: "*",
         methods: ["GET", "POST"]
-    }
+    },
+    transports: ['polling', 'websocket'],
+    allowEIO3: true
 });
 
 // Middleware
@@ -786,18 +788,228 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// API Routes for Vercel compatibility
+app.get('/api/room/:roomCode', (req, res) => {
+    const roomCode = req.params.roomCode;
+    const room = rooms.get(roomCode);
+    
+    if (!room) {
+        return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    res.json({
+        code: roomCode,
+        hostName: room.hostName,
+        gameType: room.gameType,
+        playerCount: room.players.size,
+        players: Array.from(room.players.values()),
+        gameState: room.gameState,
+        type: 'roomUpdate'
+    });
+});
+
+// Create room API
+app.post('/api/room/create', async (req, res) => {
+    try {
+        const { hostName, gameType } = req.body;
+        const roomCode = generateRoomCode();
+        
+        // Create room in database
+        await createRoomInDB({
+            code: roomCode,
+            hostName: hostName,
+            hostId: 'api_' + Date.now(),
+            gameType: gameType || 'mixed',
+            maxPlayers: 8,
+            settings: {
+                gameDuration: 30,
+                categories: ['spicy', 'funny', 'sport', 'movie']
+            }
+        });
+
+        // Create room in memory
+        const room = {
+            code: roomCode,
+            host: 'api_' + Date.now(),
+            hostName: hostName,
+            gameType: gameType || 'mixed',
+            players: new Map(),
+            gameState: 'lobby',
+            currentGame: null,
+            scores: new Map(),
+            settings: {
+                maxPlayers: 8,
+                gameDuration: 30,
+                categories: ['spicy', 'funny', 'sport', 'movie']
+            }
+        };
+        
+        rooms.set(roomCode, room);
+        
+        res.json({
+            roomCode: roomCode,
+            room: {
+                code: roomCode,
+                hostName: hostName,
+                gameType: gameType,
+                playerCount: 0,
+                players: []
+            }
+        });
+    } catch (error) {
+        console.error('❌ Error creating room:', error);
+        res.status(500).json({ error: 'Failed to create room' });
+    }
+});
+
+// Join room API
+app.post('/api/room/join', async (req, res) => {
+    try {
+        const { roomCode, playerName } = req.body;
+        const room = rooms.get(roomCode);
+        
+        if (!room) {
+            return res.status(404).json({ error: 'Room not found' });
+        }
+        
+        if (room.players.size >= room.settings.maxPlayers) {
+            return res.status(400).json({ error: 'Room is full' });
+        }
+        
+        if (room.gameState !== 'lobby') {
+            return res.status(400).json({ error: 'Game already started' });
+        }
+        
+        // Add player to database
+        await addPlayerToDB(roomCode, {
+            socketId: 'api_' + Date.now(),
+            name: playerName,
+            avatar: generateAvatar(),
+            isHost: false
+        });
+
+        // Add player to room
+        const player = {
+            id: 'api_' + Date.now(),
+            name: playerName,
+            avatar: generateAvatar(),
+            isHost: false,
+            score: 0,
+            isReady: false
+        };
+        
+        room.players.set(player.id, player);
+        room.scores.set(player.id, 0);
+        
+        res.json({
+            player: player,
+            room: {
+                code: roomCode,
+                hostName: room.hostName,
+                gameType: room.gameType,
+                playerCount: room.players.size,
+                players: Array.from(room.players.values())
+            }
+        });
+    } catch (error) {
+        console.error('❌ Error joining room:', error);
+        res.status(500).json({ error: 'Failed to join room' });
+    }
+});
+
+// Submit vote API
+app.post('/api/game/vote', async (req, res) => {
+    try {
+        const { roomCode, playerId, vote, voteType } = req.body;
+        const room = rooms.get(roomCode);
+        
+        if (!room || room.gameState !== 'playing') {
+            return res.status(400).json({ error: 'Game not active' });
+        }
+        
+        // Log game event in database
+        await logGameEvent(roomCode, playerId, 'vote', {
+            vote: vote,
+            voteType: voteType || 'player_vote',
+            roundNumber: room.currentRound || 1,
+            gamePhase: 'playing',
+            responseTime: 0
+        });
+
+        // Store the vote
+        if (!room.votes) room.votes = new Map();
+        room.votes.set(playerId, { vote, voteType });
+        
+        console.log(`🗳️ Vote submitted by ${playerId}:`, { vote, voteType });
+        
+        // Check if all players have voted
+        if (room.votes.size === room.players.size) {
+            processVotes(roomCode);
+        }
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Error submitting vote:', error);
+        res.status(500).json({ error: 'Failed to submit vote' });
+    }
+});
+
+// Start game API
+app.post('/api/game/start', async (req, res) => {
+    try {
+        const { roomCode, gameType } = req.body;
+        const room = rooms.get(roomCode);
+        
+        if (!room) {
+            return res.status(404).json({ error: 'Room not found' });
+        }
+        
+        if (room.players.size < 2) {
+            return res.status(400).json({ error: 'Need at least 2 players' });
+        }
+        
+        // Update room status in database
+        await updateRoomStatus(roomCode, 'playing', {
+            game_type: gameType || 'mostLikelyTo'
+        });
+
+        room.gameState = 'playing';
+        room.currentGame = gameType || 'mostLikelyTo';
+        
+        console.log(`🎮 Game started in room ${roomCode}: ${room.currentGame}`);
+        
+        // Start the specific game
+        startGame(roomCode, room.currentGame);
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Error starting game:', error);
+        res.status(500).json({ error: 'Failed to start game' });
+    }
+});
+
 // Generate QR code for room
-app.get('/qr/:roomCode', async (req, res) => {
+app.get('/api/qr/:roomCode', async (req, res) => {
     try {
         const roomCode = req.params.roomCode;
-        const qrCode = await QRCode.toDataURL(`http://localhost:3000?room=${roomCode}`);
+        const qrCode = await QRCode.toDataURL(`${req.protocol}://${req.get('host')}?room=${roomCode}`);
         res.json({ qrCode });
     } catch (error) {
         res.status(500).json({ error: 'Failed to generate QR code' });
     }
 });
 
-// Get room info
+// Legacy routes for backward compatibility
+app.get('/qr/:roomCode', async (req, res) => {
+    try {
+        const roomCode = req.params.roomCode;
+        const qrCode = await QRCode.toDataURL(`${req.protocol}://${req.get('host')}?room=${roomCode}`);
+        res.json({ qrCode });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to generate QR code' });
+    }
+});
+
 app.get('/room/:roomCode', (req, res) => {
     const roomCode = req.params.roomCode;
     const room = rooms.get(roomCode);
