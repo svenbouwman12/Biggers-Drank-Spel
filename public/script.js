@@ -151,12 +151,30 @@ async function handleJoinSubmit(e) {
 // ============================================================================
 
 function handleRoomCreated(data) {
+    console.log('🏠 Room created data:', data);
+    
     currentRoom = data.roomCode;
-    currentPlayer = {
-        id: data.room.players[0].id,
-        name: data.room.players[0].name,
-        isHost: true
-    };
+    
+    // Find the host player in the players array
+    const hostPlayer = data.room.players.find(player => player.isHost);
+    if (hostPlayer) {
+        currentPlayer = {
+            id: hostPlayer.id,
+            name: hostPlayer.name,
+            isHost: true
+        };
+        console.log('👑 Host player set:', currentPlayer);
+    } else {
+        console.log('⚠️ Host player not found in room data');
+        // Fallback: use first player as host
+        if (data.room.players && data.room.players.length > 0) {
+            currentPlayer = {
+                id: data.room.players[0].id,
+                name: data.room.players[0].name,
+                isHost: true
+            };
+        }
+    }
     
     hideLoading();
     showLobby(data.room);
@@ -184,6 +202,9 @@ function handlePlayerJoined(data) {
 function showLobby(room) {
     currentRoomData = room;
     
+    console.log('🏠 Showing lobby for room:', room);
+    console.log('👥 Players in room:', room.players);
+    
     // Update lobby display
     const roomCodeElement = document.getElementById('currentRoomCode');
     const playerCountElement = document.getElementById('playerCount');
@@ -193,7 +214,7 @@ function showLobby(room) {
     }
     
     if (playerCountElement) {
-        playerCountElement.textContent = room.playerCount;
+        playerCountElement.textContent = room.playerCount || room.players.length;
     }
     
     // Update players grid
@@ -201,16 +222,22 @@ function showLobby(room) {
     if (playersGrid) {
         playersGrid.innerHTML = '';
         
-        room.players.forEach(player => {
-            const playerElement = document.createElement('div');
-            playerElement.className = 'player-item';
-            playerElement.innerHTML = `
-                <span class="player-avatar">${player.avatar}</span>
-                <span class="player-name">${player.name}</span>
-                ${player.isHost ? '<span class="host-badge">Host</span>' : ''}
-            `;
-            playersGrid.appendChild(playerElement);
-        });
+        if (room.players && room.players.length > 0) {
+            room.players.forEach(player => {
+                console.log('👤 Adding player to lobby:', player);
+                const playerElement = document.createElement('div');
+                playerElement.className = 'player-item';
+                playerElement.innerHTML = `
+                    <span class="player-avatar">${player.avatar}</span>
+                    <span class="player-name">${player.name}</span>
+                    ${player.isHost ? '<span class="host-badge">Host</span>' : ''}
+                `;
+                playersGrid.appendChild(playerElement);
+            });
+        } else {
+            console.log('⚠️ No players found in room.players array');
+            playersGrid.innerHTML = '<p class="no-players">No players yet...</p>';
+        }
     }
     
     // Update start button

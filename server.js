@@ -270,19 +270,33 @@ app.post('/api/room/create', async (req, res) => {
         };
         
         // Add host as first player
+        const hostAvatar = generateAvatar();
         const hostPlayer = {
             id: hostId,
             name: hostName,
-            avatar: generateAvatar(),
+            avatar: hostAvatar,
             isHost: true,
             score: 0,
             joinedAt: new Date().toISOString()
         };
         
+        // Add host to database
+        await supabase
+            .from('players')
+            .insert([{
+                room_id: roomCode,
+                socket_id: hostId,
+                player_name: hostName,
+                avatar: hostAvatar,
+                is_host: true,
+                score: 0,
+                joined_at: new Date().toISOString()
+            }]);
+        
         room.players.set(hostId, hostPlayer);
         rooms.set(roomCode, room);
         
-        console.log(`🏠 Room created via API: ${roomCode} by ${hostName}`);
+        console.log(`🏠 Room created via API: ${roomCode} by ${hostName} (host added to DB)`);
         
         res.json({
             roomCode: roomCode,
