@@ -153,6 +153,35 @@ app.get('/api/debug/players', async (req, res) => {
     }
 });
 
+// Debug database room status
+app.get('/api/debug/db-room/:roomCode', async (req, res) => {
+    try {
+        const roomCode = req.params.roomCode;
+        
+        const { data: roomData, error: roomError } = await supabase
+            .from('rooms')
+            .select('*')
+            .eq('code', roomCode)
+            .single();
+            
+        if (roomError || !roomData) {
+            return res.status(404).json({ error: 'Room not found in database' });
+        }
+        
+        res.json({
+            code: roomCode,
+            status: roomData.status,
+            game_type: roomData.game_type,
+            started_at: roomData.started_at,
+            created_at: roomData.created_at,
+            fullData: roomData
+        });
+    } catch (error) {
+        console.error('❌ Debug database room error:', error);
+        res.status(500).json({ error: 'Failed to fetch database room' });
+    }
+});
+
 // Get room info - Database first approach
 app.get('/api/room/:roomCode', async (req, res) => {
     const roomCode = req.params.roomCode;
