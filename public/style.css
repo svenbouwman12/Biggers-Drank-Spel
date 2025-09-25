@@ -211,7 +211,7 @@ body {
 .glass-button.tertiary {
     background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(56, 142, 60, 0.3));
     border-color: rgba(76, 175, 80, 0.4);
-    color: #4caf50;
+    color: #fff;
 }
 
 .button-icon {
