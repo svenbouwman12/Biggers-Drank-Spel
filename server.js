@@ -182,6 +182,55 @@ app.get('/api/debug/db-room/:roomCode', async (req, res) => {
     }
 });
 
+// Test database update directly
+app.post('/api/debug/test-update/:roomCode', async (req, res) => {
+    try {
+        const roomCode = req.params.roomCode;
+        
+        console.log(`🧪 Testing database update for room ${roomCode}...`);
+        
+        // Try to update the room status
+        const { data: updateData, error: updateError } = await supabase
+            .from('rooms')
+            .update({ 
+                status: 'playing',
+                started_at: new Date().toISOString(),
+                game_type: 'simpleTest'
+            })
+            .eq('code', roomCode)
+            .select();
+            
+        if (updateError) {
+            console.error('❌ Test update failed:', updateError);
+            return res.status(500).json({ 
+                error: 'Database update failed',
+                details: updateError.message,
+                hint: updateError.hint,
+                code: updateError.code
+            });
+        }
+        
+        console.log(`✅ Test update successful:`, updateData);
+        
+        // Get updated room data
+        const { data: roomData, error: roomError } = await supabase
+            .from('rooms')
+            .select('*')
+            .eq('code', roomCode)
+            .single();
+            
+        res.json({
+            success: true,
+            updateResult: updateData,
+            currentRoomData: roomData,
+            message: 'Database update test completed'
+        });
+    } catch (error) {
+        console.error('❌ Test update error:', error);
+        res.status(500).json({ error: 'Test update failed', details: error.message });
+    }
+});
+
 // Get room info - Database first approach
 app.get('/api/room/:roomCode', async (req, res) => {
     const roomCode = req.params.roomCode;
