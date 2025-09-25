@@ -296,7 +296,7 @@ async function startGameAPI(gameType) {
             },
             body: JSON.stringify({
                 roomCode: currentRoom,
-                gameType: gameType
+                gameType: 'balletjeBalletje' // Always use balletjeBalletje
             })
         });
 
@@ -387,7 +387,7 @@ function updateGameScreen(data) {
             <div class="game-header">
                 <div class="round-info">
                     <span class="round-counter">Round ${currentGame.currentRound}/${currentGame.totalRounds}</span>
-                    <span class="game-phase">${currentGame.phase === 'question' ? 'Question Time' : 'Results'}</span>
+                    <span class="game-phase">${currentGame.phase === 'question' ? 'Kies je beker!' : 'Resultaten'}</span>
                 </div>
                 <div class="timer" id="gameTimer">
                     <span id="timeRemaining">${Math.ceil((currentGame.timeRemaining || 0) / 1000)}s</span>
@@ -397,18 +397,38 @@ function updateGameScreen(data) {
             ${currentGame.phase === 'question' ? `
                 <div class="question-container">
                     <h3 class="question">${currentGame.currentQuestion ? currentGame.currentQuestion.question : 'Loading...'}</h3>
-                    <div class="options">
+                    <div class="beker-container">
                         ${currentGame.currentQuestion ? currentGame.currentQuestion.options.map((option, index) => `
-                            <button class="glass-button option-btn" onclick="selectAnswer(${index})">
-                                <span class="button-text">${option}</span>
-                            </button>
+                            <div class="beker-option" onclick="selectAnswer(${index})">
+                                <div class="beker">
+                                    <div class="beker-top">${option}</div>
+                                    <div class="beker-body"></div>
+                                </div>
+                                <div class="vote-indicators" id="votes-${index}">
+                                    <!-- Votes will be shown here -->
+                                </div>
+                            </div>
                         `).join('') : ''}
+                    </div>
+                    <div class="player-votes" id="playerVotes">
+                        <!-- Player votes will be shown here -->
                     </div>
                 </div>
             ` : `
                 <div class="results-container">
-                    <h3>Round ${currentGame.currentRound} Results</h3>
-                    <p>Calculating results...</p>
+                    <h3>Round ${currentGame.currentRound} Resultaten</h3>
+                    <div class="correct-answer">
+                        <p><strong>Het juiste antwoord was: Beker ${currentGame.currentQuestion.correctAnswer + 1}</strong></p>
+                        <p>${currentGame.currentQuestion.explanation}</p>
+                    </div>
+                    <div class="vote-results">
+                        ${currentGame.currentQuestion.options.map((option, index) => `
+                            <div class="vote-result">
+                                <span class="beker-name">${option}:</span>
+                                <span class="vote-count">${getVoteCount(currentGame, index)} stemmen</span>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             `}
             
@@ -420,9 +440,12 @@ function updateGameScreen(data) {
             </div>
         `;
         
+        // Update player votes display
+        updatePlayerVotes(currentGame);
+        
         // Start timer if question phase
         if (currentGame.phase === 'question') {
-            startGameTimer(currentGame.timeRemaining || 30000);
+            startGameTimer(currentGame.timeRemaining || 15000);
         }
     } else {
         // Show basic game screen (fallback)
@@ -473,8 +496,94 @@ function startGameTimer(duration) {
 
 function selectAnswer(answerIndex) {
     console.log(`Selected answer: ${answerIndex}`);
-    // TODO: Send answer to server
-    showNotification('Answer submitted!', 'success');
+    
+    if (!currentPlayer || !currentRoom) {
+        showNotification('No player or room found', 'error');
+        return;
+    }
+    
+    // Send vote to server
+    fetch('/api/game/vote', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            roomCode: currentRoom,
+            playerId: currentPlayer.id,
+            vote: answerIndex
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('✅ Vote submitted:', data);
+            showNotification(`Je hebt gekozen voor Beker ${answerIndex + 1}!`, 'success');
+        } else {
+            console.error('❌ Vote failed:', data);
+            showNotification(data.error || 'Failed to submit vote', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('❌ Vote error:', error);
+        showNotification('Failed to submit vote', 'error');
+    });
+}
+
+function updatePlayerVotes(currentGame) {
+    if (!currentGame || !currentGame.playerVotes) return;
+    
+    const playerVotesContainer = document.getElementById('playerVotes');
+    if (!playerVotesContainer) return;
+    
+    // Clear previous votes
+    playerVotesContainer.innerHTML = '';
+    
+    // Show each player's vote
+    currentGame.playerVotes.forEach(([playerId, vote]) => {
+        const player = currentRoomData?.players?.find(p => p.id === playerId);
+        if (player) {
+            const voteElement = document.createElement('div');
+            voteElement.className = 'player-vote';
+            voteElement.innerHTML = `
+                <span class="player-avatar">${player.avatar}</span>
+                <span class="player-name">${player.name}</span>
+                <span class="vote-choice">Beker ${vote + 1}</span>
+            `;
+            playerVotesContainer.appendChild(voteElement);
+        }
+    });
+    
+    // Update vote indicators on bekers
+    currentGame.currentQuestion.options.forEach((option, index) => {
+        const voteContainer = document.getElementById(`votes-${index}`);
+        if (voteContainer) {
+            voteContainer.innerHTML = '';
+            
+            currentGame.playerVotes.forEach(([playerId, vote]) => {
+                if (vote === index) {
+                    const player = currentRoomData?.players?.find(p => p.id === playerId);
+                    if (player) {
+                        const indicator = document.createElement('span');
+                        indicator.className = 'vote-indicator';
+                        indicator.textContent = player.avatar;
+                        indicator.title = player.name;
+                        voteContainer.appendChild(indicator);
+                    }
+                }
+            });
+        }
+    });
+}
+
+function getVoteCount(currentGame, optionIndex) {
+    if (!currentGame || !currentGame.playerVotes) return 0;
+    
+    let count = 0;
+    currentGame.playerVotes.forEach(([playerId, vote]) => {
+        if (vote === optionIndex) count++;
+    });
+    return count;
 }
 
 function leaveLobby() {
@@ -541,6 +650,11 @@ function startPolling(roomCode) {
                     if (currentScreen && currentScreen.id === 'gameScreen' && data.currentGame) {
                         console.log('🎮 Updating game screen with new data');
                         updateGameScreen(data);
+                        
+                        // Update player votes if in question phase
+                        if (data.currentGame.phase === 'question') {
+                            updatePlayerVotes(data.currentGame);
+                        }
                     }
                 }
             }

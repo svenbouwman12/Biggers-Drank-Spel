@@ -31,15 +31,28 @@ const rooms = new Map();
 
 // Simple test game data
 const gameData = {
-    simpleTest: {
-        name: "Simple Test Game",
-        description: "A basic multiplayer test game",
+    balletjeBalletje: {
+        name: "Balletje Balletje",
+        description: "Waar zit het balletje onder?",
         rounds: [
-            "Round 1: Say your name",
-            "Round 2: Count to 5",
-            "Round 3: Say 'Hello World'",
-            "Round 4: Wave your hand",
-            "Round 5: Smile!"
+            {
+                question: "Waar zit het balletje onder?",
+                options: ["Beker 1", "Beker 2", "Beker 3"],
+                correctAnswer: 0, // Index of correct answer
+                explanation: "Het balletje zat onder beker 1!"
+            },
+            {
+                question: "En nu? Waar zit het balletje?",
+                options: ["Beker 1", "Beker 2", "Beker 3"],
+                correctAnswer: 1,
+                explanation: "Het balletje zat onder beker 2!"
+            },
+            {
+                question: "Laatste kans! Waar zit het balletje?",
+                options: ["Beker 1", "Beker 2", "Beker 3"],
+                correctAnswer: 2,
+                explanation: "Het balletje zat onder beker 3!"
+            }
         ]
     }
 };
@@ -72,27 +85,29 @@ function startGame(roomCode, gameType) {
 
     console.log(`🎮 Starting ${gameType} game in room ${roomCode}`);
 
-    if (gameType === 'simpleTest') {
+    if (gameType === 'balletjeBalletje') {
         room.currentGame = {
             id: Date.now(),
-            type: 'simpleTest',
-            name: gameData.simpleTest.name,
-            description: gameData.simpleTest.description,
+            type: 'balletjeBalletje',
+            name: gameData.balletjeBalletje.name,
+            description: gameData.balletjeBalletje.description,
             currentRound: 0,
-            totalRounds: gameData.simpleTest.rounds.length,
-            rounds: gameData.simpleTest.rounds,
+            totalRounds: gameData.balletjeBalletje.rounds.length,
+            rounds: gameData.balletjeBalletje.rounds,
             scores: new Map(),
             startTime: Date.now(),
             currentQuestion: null,
             roundStartTime: null,
             isActive: true,
-            phase: 'question' // 'question', 'results', 'finished'
+            phase: 'question', // 'question', 'results', 'finished'
+            playerVotes: new Map(), // Store player votes
+            roundResults: new Map() // Store round results
         };
         
         // Start the first round automatically
         startNextRound(roomCode);
         
-        console.log(`🎯 Simple test game started with ${room.currentGame.totalRounds} rounds`);
+        console.log(`🎯 Balletje Balletje game started with ${room.currentGame.totalRounds} rounds`);
     }
 }
 
@@ -115,13 +130,16 @@ function startNextRound(roomCode) {
     room.currentGame.currentQuestion = currentQuestion;
     room.currentGame.roundStartTime = Date.now();
     room.currentGame.phase = 'question';
+    
+    // Clear previous round votes
+    room.currentGame.playerVotes.clear();
 
     console.log(`🎯 Round ${room.currentGame.currentRound}/${room.currentGame.totalRounds} started: ${currentQuestion.question}`);
 
-    // Auto-advance after 30 seconds
+    // Auto-advance after 15 seconds (shorter for faster gameplay)
     setTimeout(() => {
         advanceToResults(roomCode);
-    }, 30000); // 30 seconds per question
+    }, 15000); // 15 seconds per question
 }
 
 function advanceToResults(roomCode) {
@@ -129,13 +147,108 @@ function advanceToResults(roomCode) {
     if (!room || !room.currentGame) return;
 
     room.currentGame.phase = 'results';
-    console.log(`📊 Round ${room.currentGame.currentRound} results phase`);
+    
+    // Calculate results
+    const currentQuestion = room.currentGame.currentQuestion;
+    const correctAnswer = currentQuestion.correctAnswer;
+    const votes = room.currentGame.playerVotes;
+    
+    // Count votes for each option
+    const voteCounts = [0, 0, 0]; // For 3 options
+    votes.forEach((vote, playerId) => {
+        if (vote >= 0 && vote < 3) {
+            voteCounts[vote]++;
+        }
+    });
+    
+    // Store round results
+    room.currentGame.roundResults.set(room.currentGame.currentRound, {
+        correctAnswer: correctAnswer,
+        voteCounts: voteCounts,
+        playerVotes: Array.from(votes.entries()),
+        explanation: currentQuestion.explanation
+    });
+    
+    console.log(`📊 Round ${room.currentGame.currentRound} results phase - Correct: ${correctAnswer}, Votes: [${voteCounts.join(', ')}]`);
 
-    // Auto-advance to next round after 10 seconds
+    // Auto-advance to next round after 8 seconds
     setTimeout(() => {
         startNextRound(roomCode);
-    }, 10000); // 10 seconds for results
+    }, 8000); // 8 seconds for results
 }
+
+// Vote for an option in the current game
+app.post('/api/game/vote', async (req, res) => {
+    try {
+        const { roomCode, playerId, vote } = req.body;
+        
+        console.log(`🗳️ Vote received: Room ${roomCode}, Player ${playerId}, Vote ${vote}`);
+        
+        // Get room from memory or database
+        let room = rooms.get(roomCode);
+        
+        if (!room) {
+            // Try to get from database
+            const { data: roomData, error: roomError } = await supabase
+                .from('rooms')
+                .select('*')
+                .eq('code', roomCode)
+                .single();
+                
+            if (roomError || !roomData) {
+                return res.status(404).json({ error: 'Room not found' });
+            }
+            
+            // Recreate room in memory
+            room = {
+                code: roomCode,
+                host: roomData.host_id,
+                hostName: roomData.host_name,
+                gameType: roomData.game_type,
+                players: new Map(),
+                gameState: roomData.status,
+                currentGame: null,
+                scores: new Map(),
+                settings: roomData.settings || {}
+            };
+            
+            // Try to get game state from database settings
+            if (roomData.settings && roomData.settings.currentGame) {
+                room.currentGame = roomData.settings.currentGame;
+            }
+            
+            rooms.set(roomCode, room);
+        }
+        
+        if (!room.currentGame || !room.currentGame.isActive) {
+            return res.status(400).json({ error: 'No active game in this room' });
+        }
+        
+        if (room.currentGame.phase !== 'question') {
+            return res.status(400).json({ error: 'Voting is only allowed during question phase' });
+        }
+        
+        // Validate vote
+        if (vote < 0 || vote >= room.currentGame.currentQuestion.options.length) {
+            return res.status(400).json({ error: 'Invalid vote option' });
+        }
+        
+        // Store the vote
+        room.currentGame.playerVotes.set(playerId, vote);
+        
+        console.log(`✅ Vote stored: Player ${playerId} voted for option ${vote}`);
+        
+        res.json({ 
+            success: true, 
+            message: 'Vote recorded',
+            currentVotes: Array.from(room.currentGame.playerVotes.entries())
+        });
+        
+    } catch (error) {
+        console.error('❌ Error recording vote:', error);
+        res.status(500).json({ error: 'Failed to record vote' });
+    }
+});
 
 // ============================================================================
 // API ROUTES
@@ -447,8 +560,8 @@ app.get('/api/room/:roomCode', async (req, res) => {
         
         if (currentGame && currentGame.isActive) {
             const timeRemaining = currentGame.phase === 'question' ? 
-                Math.max(0, 30000 - (Date.now() - currentGame.roundStartTime)) : 
-                Math.max(0, 10000 - (Date.now() - currentGame.roundStartTime));
+                Math.max(0, 15000 - (Date.now() - currentGame.roundStartTime)) : 
+                Math.max(0, 8000 - (Date.now() - currentGame.roundStartTime));
                 
             roomResponse.currentGame = {
                 id: currentGame.id,
@@ -460,7 +573,9 @@ app.get('/api/room/:roomCode', async (req, res) => {
                 phase: currentGame.phase,
                 roundStartTime: currentGame.roundStartTime,
                 timeRemaining: timeRemaining,
-                isActive: true
+                isActive: true,
+                playerVotes: currentGame.playerVotes ? Array.from(currentGame.playerVotes.entries()) : [],
+                roundResults: currentGame.roundResults ? Array.from(currentGame.roundResults.entries()) : []
             };
             
             console.log(`🎮 Added currentGame to response:`, roomResponse.currentGame);
@@ -791,17 +906,21 @@ app.post('/api/game/start', async (req, res) => {
         // Create game state data with actual game data
         const gameStateData = {
             id: Date.now(),
-            type: gameType || 'simpleTest',
-            name: 'Simple Test Game',
+            type: gameType || 'balletjeBalletje',
+            name: 'Balletje Balletje',
             currentRound: 1,
-            totalRounds: 5,
+            totalRounds: 3,
             phase: 'question',
             roundStartTime: Date.now(),
             isActive: true,
             currentQuestion: {
-                question: "What is your favorite color?",
-                options: ["Red", "Blue", "Green", "Yellow"]
-            }
+                question: "Waar zit het balletje onder?",
+                options: ["Beker 1", "Beker 2", "Beker 3"],
+                correctAnswer: 0,
+                explanation: "Het balletje zat onder beker 1!"
+            },
+            playerVotes: [],
+            roundResults: []
         };
         
         console.log(`📝 Update data:`, { 
