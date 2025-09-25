@@ -355,6 +355,50 @@ function resetRaceState() {
 // PAARDENRACE GAME FUNCTIONS (BASIC)
 // ============================================================================
 
+function placeBet(suit) {
+    console.log('💰 Placing bet on suit:', suit);
+    
+    // Check if we're in betting phase
+    if (raceState.phase !== 'betting') {
+        console.log('❌ Not in betting phase');
+        return;
+    }
+    
+    // Check if timer has expired
+    if (raceState.bettingTimer <= 0) {
+        console.log('❌ Betting phase has ended');
+        return;
+    }
+    
+    // Get current player (for single player mode, use first player)
+    const currentPlayer = gameState.players[0];
+    if (!currentPlayer) {
+        console.log('❌ No current player found');
+        return;
+    }
+    
+    // Place the bet
+    raceState.playerBets[currentPlayer.id] = suit;
+    console.log(`💰 ${currentPlayer.name} bet on ${suit}`);
+    
+    // Update UI
+    updateBetCounts();
+    
+    // Visual feedback
+    const horseCard = document.querySelector(`[data-suit="${suit}"]`);
+    if (horseCard) {
+        horseCard.classList.add('bet-placed');
+        setTimeout(() => {
+            horseCard.classList.remove('bet-placed');
+        }, 1000);
+    }
+    
+    // Broadcast bet in multiplayer mode
+    if (gameState.isMultiplayer && window.simpleSupabase) {
+        broadcastBettingUpdate();
+    }
+}
+
 function startBettingPhase() {
     console.log('💰 Starting betting phase');
     

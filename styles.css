@@ -635,6 +635,19 @@ h3 {
     box-shadow: 0 6px 20px rgba(116, 185, 255, 0.4);
 }
 
+.horse-card.bet-placed {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(46, 204, 113, 0.6);
+    border: 2px solid #2ecc71;
+    animation: betPulse 0.6s ease-out;
+}
+
+@keyframes betPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1.05); }
+}
+
 .horse-card.selected {
     background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
     transform: translateY(-5px);
