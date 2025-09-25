@@ -274,13 +274,19 @@ function startGame() {
 async function startGameAPI(gameType) {
     const startBtn = document.getElementById('startGameBtn');
     
+    // Prevent multiple simultaneous calls
+    if (startBtn && startBtn.disabled) {
+        console.log('⚠️ Game start already in progress, ignoring duplicate call');
+        return;
+    }
+    
     try {
         console.log('🎮 Starting game via API:', gameType);
         
         // Disable button to prevent double clicks
         if (startBtn) {
             startBtn.disabled = true;
-            startBtn.textContent = 'Starting...';
+            startBtn.innerHTML = '<span class="button-icon">⏳</span><span class="button-text">Starting...</span>';
         }
         
         const response = await fetch('/api/game/start', {

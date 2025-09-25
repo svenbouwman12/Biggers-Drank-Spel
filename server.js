@@ -206,6 +206,7 @@ app.get('/api/room/:roomCode', async (req, res) => {
                     joinedAt: playerData.joined_at
                 };
                 room.players.set(player.id, player);
+                console.log(`👤 Restored player: ${player.name} (${player.isHost ? 'Host' : 'Player'})`);
             });
             
             // Store in memory
@@ -375,6 +376,7 @@ app.post('/api/room/join', async (req, res) => {
                     joinedAt: playerData.joined_at
                 };
                 room.players.set(player.id, player);
+                console.log(`👤 Restored player: ${player.name} (${player.isHost ? 'Host' : 'Player'})`);
             });
             
             // Store in memory
@@ -495,6 +497,7 @@ app.post('/api/game/start', async (req, res) => {
                     joinedAt: playerData.joined_at
                 };
                 room.players.set(player.id, player);
+                console.log(`👤 Restored player: ${player.name} (${player.isHost ? 'Host' : 'Player'})`);
             });
             
             // Store in memory
@@ -520,14 +523,19 @@ app.post('/api/game/start', async (req, res) => {
         room.currentGame = gameType || 'mostLikelyTo';
         
         console.log(`🎮 Game started via API in room ${roomCode}: ${room.currentGame}`);
+        console.log(`👥 Players in room before game start: ${room.players.size}`);
         
         // Start the specific game
         startGame(roomCode, room.currentGame);
         
+        // Ensure room is stored in memory after game start
+        rooms.set(roomCode, room);
+        
         res.json({ 
             success: true,
             gameType: room.currentGame,
-            players: Array.from(room.players.values())
+            players: Array.from(room.players.values()),
+            playerCount: room.players.size
         });
     } catch (error) {
         console.error('❌ Error starting game:', error);
@@ -596,6 +604,7 @@ app.post('/api/game/vote', async (req, res) => {
                     joinedAt: playerData.joined_at
                 };
                 room.players.set(player.id, player);
+                console.log(`👤 Restored player: ${player.name} (${player.isHost ? 'Host' : 'Player'})`);
             });
             
             // Store in memory
