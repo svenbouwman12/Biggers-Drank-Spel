@@ -1184,6 +1184,68 @@ app.get('/api/qr/:roomCode', async (req, res) => {
     }
 });
 
+// Get all active lobbies
+app.get('/api/lobbies', async (req, res) => {
+    try {
+        console.log('📋 Fetching active lobbies...');
+        
+        // Get all rooms from database where status is 'lobby' or 'playing'
+        const { data: roomsData, error } = await supabase
+            .from('rooms')
+            .select(`
+                code,
+                host_name,
+                game_type,
+                status,
+                current_players,
+                max_players,
+                created_at,
+                started_at
+            `)
+            .in('status', ['lobby', 'playing'])
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('❌ Error fetching lobbies:', error);
+            return res.status(500).json({ error: 'Failed to fetch lobbies' });
+        }
+
+        // Get player count for each room
+        const lobbiesWithPlayers = await Promise.all(
+            roomsData.map(async (room) => {
+                const { data: playersData } = await supabase
+                    .from('players')
+                    .select('name, avatar')
+                    .eq('room_id', room.code);
+
+                return {
+                    code: room.code,
+                    hostName: room.host_name,
+                    gameType: room.game_type,
+                    status: room.status,
+                    currentPlayers: playersData?.length || 0,
+                    maxPlayers: room.max_players || 8,
+                    players: playersData || [],
+                    createdAt: room.created_at,
+                    startedAt: room.started_at,
+                    canJoin: room.status === 'lobby' && (playersData?.length || 0) < (room.max_players || 8)
+                };
+            })
+        );
+
+        console.log(`📋 Found ${lobbiesWithPlayers.length} active lobbies`);
+        res.json({ 
+            success: true, 
+            lobbies: lobbiesWithPlayers,
+            count: lobbiesWithPlayers.length
+        });
+
+    } catch (error) {
+        console.error('❌ Error in /api/lobbies:', error);
+        res.status(500).json({ error: 'Failed to fetch lobbies' });
+    }
+});
+
 // Legacy routes for backward compatibility
 app.get('/qr/:roomCode', async (req, res) => {
     try {

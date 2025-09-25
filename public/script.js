@@ -793,6 +793,11 @@ function backToLobby() {
     }
 }
 
+function browseLobbies() {
+    console.log('📋 Opening lobby browser');
+    window.open('lobbies.html', '_blank');
+}
+
 function showLoading(message = 'Loading...') {
     const loading = document.getElementById('loadingOverlay');
     const loadingText = document.getElementById('loadingText');

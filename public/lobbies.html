@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Lobby Browser - Biggers Drankspel</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <span class="logo-icon">🍻</span>
+                    <span class="logo-text">Biggers Drankspel</span>
+                </h1>
+                <div class="header-actions">
+                    <button class="glass-button secondary" onclick="goHome()">
+                        <span class="button-icon">🏠</span>
+                        <span class="button-text">Home</span>
+                    </button>
+                    <button class="glass-button primary" onclick="createRoom()">
+                        <span class="button-icon">➕</span>
+                        <span class="button-text">Maak Room</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Lobby Browser Section -->
+            <section id="lobbyBrowser" class="screen active">
+                <div class="glass-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <span class="title-icon">📋</span>
+                            <span class="title-text">Actieve Lobbies</span>
+                        </h2>
+                        <div class="refresh-info">
+                            <span class="refresh-icon">🔄</span>
+                            <span class="refresh-text">Auto-refresh elke 3 seconden</span>
+                        </div>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="lobbiesLoading" class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">Lobbies laden...</p>
+                    </div>
+
+                    <!-- No Lobbies State -->
+                    <div id="noLobbies" class="empty-state hidden">
+                        <div class="empty-icon">🎯</div>
+                        <h3 class="empty-title">Geen actieve lobbies</h3>
+                        <p class="empty-text">Er zijn momenteel geen lobbies beschikbaar. Maak zelf een lobby aan!</p>
+                        <button class="glass-button primary" onclick="createRoom()">
+                            <span class="button-icon">➕</span>
+                            <span class="button-text">Maak Lobby</span>
+                        </button>
+                    </div>
+
+                    <!-- Lobbies List -->
+                    <div id="lobbiesList" class="lobbies-list hidden">
+                        <!-- Lobby items will be populated here -->
+                    </div>
+
+                    <!-- Refresh Button -->
+                    <div class="card-footer">
+                        <button class="glass-button secondary" onclick="refreshLobbies()">
+                            <span class="button-icon">🔄</span>
+                            <span class="button-text">Vernieuw</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Join Form Section -->
+            <section id="joinForm" class="screen">
+                <div class="glass-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <span class="title-icon">🎯</span>
+                            <span class="title-text">Join Lobby</span>
+                        </h2>
+                        <button class="glass-button secondary small" onclick="showLobbyBrowser()">
+                            <span class="button-icon">←</span>
+                            <span class="button-text">Terug</span>
+                        </button>
+                    </div>
+
+                    <div class="form-content">
+                        <div class="form-group">
+                            <label for="playerName">Jouw Naam</label>
+                            <input type="text" id="playerName" placeholder="Voer je naam in..." maxlength="20">
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="glass-button primary" onclick="joinRoomFromBrowser()">
+                                <span class="button-icon">🚀</span>
+                                <span class="button-text">Join Lobby</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Notification Container -->
+        <div id="notificationContainer" class="notification-container"></div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="loading-content">
+                <div class="loading-spinner large"></div>
+                <p class="loading-text">Laden...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="lobby-browser.js"></script>
+</body>
+</html>
