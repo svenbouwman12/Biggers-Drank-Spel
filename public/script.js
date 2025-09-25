@@ -308,7 +308,30 @@ async function startGameAPI(gameType) {
         } else {
             const error = await response.json();
             console.error('❌ Failed to start game:', error);
-            showNotification(error.error || 'Failed to start game', 'error');
+            
+            // Try force update if normal start fails
+            console.log('🔄 Normal start failed, trying force update...');
+            try {
+                const forceResponse = await fetch(`/api/debug/force-game-start/${currentRoom}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (forceResponse.ok) {
+                    const forceData = await forceResponse.json();
+                    console.log('✅ Force update successful:', forceData);
+                    showNotification('🎮 Game started!', 'success');
+                    // The polling will detect the game state change
+                } else {
+                    const forceError = await forceResponse.json();
+                    showNotification(forceError.error || 'Failed to start game', 'error');
+                }
+            } catch (forceError) {
+                console.error('❌ Force update failed:', forceError);
+                showNotification('Failed to start game', 'error');
+            }
             
             // Re-enable button on error
             if (startBtn) {

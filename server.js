@@ -230,6 +230,66 @@ app.get('/api/debug/db-room/:roomCode', async (req, res) => {
     }
 });
 
+// Force update game state in database
+app.post('/api/debug/force-game-start/:roomCode', async (req, res) => {
+    try {
+        const roomCode = req.params.roomCode;
+        
+        console.log(`🔥 Force updating game state for room ${roomCode}...`);
+        
+        // Create game state data
+        const gameStateData = {
+            id: Date.now(),
+            type: 'simpleTest',
+            name: 'Simple Test Game',
+            currentRound: 1,
+            totalRounds: 5,
+            phase: 'question',
+            roundStartTime: Date.now(),
+            isActive: true,
+            currentQuestion: {
+                question: "What is your favorite color?",
+                options: ["Red", "Blue", "Green", "Yellow"]
+            }
+        };
+        
+        // Force update database
+        const { data: updateData, error: updateError } = await supabase
+            .from('rooms')
+            .update({ 
+                status: 'playing',
+                started_at: new Date().toISOString(),
+                game_type: 'simpleTest',
+                settings: JSON.stringify({
+                    categories: ['spicy', 'funny', 'sport', 'movie'],
+                    gameDuration: 30,
+                    currentGame: gameStateData
+                })
+            })
+            .eq('code', roomCode)
+            .select();
+            
+        if (updateError) {
+            console.error('❌ Force update failed:', updateError);
+            return res.status(500).json({ 
+                error: 'Force update failed',
+                details: updateError.message
+            });
+        }
+        
+        console.log(`✅ Force update successful:`, updateData);
+        
+        res.json({
+            success: true,
+            message: 'Game state force updated',
+            updateData: updateData
+        });
+    } catch (error) {
+        console.error('❌ Force update error:', error);
+        res.status(500).json({ error: 'Force update failed', details: error.message });
+    }
+});
+
 // Debug current game state
 app.get('/api/debug/game-state/:roomCode', (req, res) => {
     try {
