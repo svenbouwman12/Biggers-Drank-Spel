@@ -82,11 +82,59 @@ function startGame(roomCode, gameType) {
             totalRounds: gameData.simpleTest.rounds.length,
             rounds: gameData.simpleTest.rounds,
             scores: new Map(),
-            startTime: Date.now()
+            startTime: Date.now(),
+            currentQuestion: null,
+            roundStartTime: null,
+            isActive: true,
+            phase: 'question' // 'question', 'results', 'finished'
         };
+        
+        // Start the first round automatically
+        startNextRound(roomCode);
         
         console.log(`🎯 Simple test game started with ${room.currentGame.totalRounds} rounds`);
     }
+}
+
+function startNextRound(roomCode) {
+    const room = rooms.get(roomCode);
+    if (!room || !room.currentGame) return;
+
+    room.currentGame.currentRound++;
+    
+    if (room.currentGame.currentRound > room.currentGame.totalRounds) {
+        // Game finished
+        room.currentGame.phase = 'finished';
+        room.gameState = 'finished';
+        console.log(`🏁 Game finished in room ${roomCode}`);
+        return;
+    }
+
+    // Get current question
+    const currentQuestion = room.currentGame.rounds[room.currentGame.currentRound - 1];
+    room.currentGame.currentQuestion = currentQuestion;
+    room.currentGame.roundStartTime = Date.now();
+    room.currentGame.phase = 'question';
+
+    console.log(`🎯 Round ${room.currentGame.currentRound}/${room.currentGame.totalRounds} started: ${currentQuestion.question}`);
+
+    // Auto-advance after 30 seconds
+    setTimeout(() => {
+        advanceToResults(roomCode);
+    }, 30000); // 30 seconds per question
+}
+
+function advanceToResults(roomCode) {
+    const room = rooms.get(roomCode);
+    if (!room || !room.currentGame) return;
+
+    room.currentGame.phase = 'results';
+    console.log(`📊 Round ${room.currentGame.currentRound} results phase`);
+
+    // Auto-advance to next round after 10 seconds
+    setTimeout(() => {
+        startNextRound(roomCode);
+    }, 10000); // 10 seconds for results
 }
 
 // ============================================================================
@@ -274,6 +322,9 @@ app.get('/api/room/:roomCode', async (req, res) => {
         
         console.log(`👥 Found ${playersData.length} players for room ${roomCode}`);
         
+        // Get in-memory room for current game state
+        const memoryRoom = rooms.get(roomCode);
+        
         // Create room object for response
         const roomResponse = {
             code: roomCode,
@@ -291,6 +342,23 @@ app.get('/api/room/:roomCode', async (req, res) => {
             gameState: roomData.status,
             type: 'roomUpdate'
         };
+        
+        // Add current game state if game is active
+        if (memoryRoom && memoryRoom.currentGame && memoryRoom.currentGame.isActive) {
+            roomResponse.currentGame = {
+                id: memoryRoom.currentGame.id,
+                type: memoryRoom.currentGame.type,
+                name: memoryRoom.currentGame.name,
+                currentRound: memoryRoom.currentGame.currentRound,
+                totalRounds: memoryRoom.currentGame.totalRounds,
+                currentQuestion: memoryRoom.currentGame.currentQuestion,
+                phase: memoryRoom.currentGame.phase,
+                roundStartTime: memoryRoom.currentGame.roundStartTime,
+                timeRemaining: memoryRoom.currentGame.phase === 'question' ? 
+                    Math.max(0, 30000 - (Date.now() - memoryRoom.currentGame.roundStartTime)) : 
+                    Math.max(0, 10000 - (Date.now() - memoryRoom.currentGame.roundStartTime))
+            };
+        }
         
         console.log(`📡 Returning room data:`, roomResponse);
         

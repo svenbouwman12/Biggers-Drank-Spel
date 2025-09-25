@@ -339,15 +339,70 @@ function handleGameStarted(data) {
     // Switch to game screen
     showScreen('gameScreen');
     
+    // Update game screen with current state
+    updateGameScreen(data);
+}
+
+function updateGameScreen(data) {
+    // Check if we have current game data from polling
+    const roomData = currentRoomData;
+    const currentGame = roomData && roomData.currentGame;
+    
     // Update game title
     const gameTitle = document.getElementById('gameTitle');
     if (gameTitle) {
         gameTitle.textContent = `🎮 Simple Test Game - Room ${currentRoom}`;
     }
     
-    // Show the simple test game interface
+    // Show the game interface
     const gameContent = document.getElementById('gameContent');
-    if (gameContent) {
+    if (!gameContent) return;
+    
+    if (currentGame && currentGame.isActive) {
+        // Show active game with current round
+        gameContent.innerHTML = `
+            <div class="game-header">
+                <div class="round-info">
+                    <span class="round-counter">Round ${currentGame.currentRound}/${currentGame.totalRounds}</span>
+                    <span class="game-phase">${currentGame.phase === 'question' ? 'Question Time' : 'Results'}</span>
+                </div>
+                <div class="timer" id="gameTimer">
+                    <span id="timeRemaining">${Math.ceil((currentGame.timeRemaining || 0) / 1000)}s</span>
+                </div>
+            </div>
+            
+            ${currentGame.phase === 'question' ? `
+                <div class="question-container">
+                    <h3 class="question">${currentGame.currentQuestion ? currentGame.currentQuestion.question : 'Loading...'}</h3>
+                    <div class="options">
+                        ${currentGame.currentQuestion ? currentGame.currentQuestion.options.map((option, index) => `
+                            <button class="glass-button option-btn" onclick="selectAnswer(${index})">
+                                <span class="button-text">${option}</span>
+                            </button>
+                        `).join('') : ''}
+                    </div>
+                </div>
+            ` : `
+                <div class="results-container">
+                    <h3>Round ${currentGame.currentRound} Results</h3>
+                    <p>Calculating results...</p>
+                </div>
+            `}
+            
+            <div class="game-actions">
+                <button class="glass-button secondary" onclick="backToLobby()">
+                    <span class="button-icon">🏠</span>
+                    <span class="button-text">Back to Lobby</span>
+                </button>
+            </div>
+        `;
+        
+        // Start timer if question phase
+        if (currentGame.phase === 'question') {
+            startGameTimer(currentGame.timeRemaining || 30000);
+        }
+    } else {
+        // Show basic game screen (fallback)
         gameContent.innerHTML = `
             <div class="game-question">
                 <h3>🎯 Simple Test Game</h3>
@@ -374,6 +429,29 @@ function handleGameStarted(data) {
             </div>
         `;
     }
+}
+
+function startGameTimer(duration) {
+    const timerElement = document.getElementById('timeRemaining');
+    if (!timerElement) return;
+    
+    let timeLeft = Math.ceil(duration / 1000);
+    
+    const timer = setInterval(() => {
+        timerElement.textContent = `${timeLeft}s`;
+        timeLeft--;
+        
+        if (timeLeft < 0) {
+            clearInterval(timer);
+            timerElement.textContent = '0s';
+        }
+    }, 1000);
+}
+
+function selectAnswer(answerIndex) {
+    console.log(`Selected answer: ${answerIndex}`);
+    // TODO: Send answer to server
+    showNotification('Answer submitted!', 'success');
 }
 
 function leaveLobby() {
@@ -433,6 +511,13 @@ function startPolling(roomCode) {
                     } else {
                         updateLobby(data);
                         currentRoomData = data;
+                    }
+                    
+                    // Check if we're in game screen and update game state
+                    const currentScreen = document.querySelector('.screen.active');
+                    if (currentScreen && currentScreen.id === 'gameScreen' && data.currentGame) {
+                        console.log('🎮 Updating game screen with new data');
+                        updateGameScreen(data);
                     }
                 }
             }
