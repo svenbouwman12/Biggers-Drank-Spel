@@ -1087,8 +1087,8 @@ function closeQuickJoinPopup() {
         nameInput.value = '';
     }
     
-    selectedRoomCode = null;
-    console.log('❌ Quick join popup closed');
+    // Don't reset selectedRoomCode here - let it be reset after successful join
+    console.log('❌ Quick join popup closed, selectedRoomCode:', selectedRoomCode);
 }
 
 function handleQuickJoinKeyPress(event) {
@@ -1100,6 +1100,9 @@ function handleQuickJoinKeyPress(event) {
 async function confirmQuickJoin() {
     const nameInput = document.getElementById('quickJoinName');
     const playerName = nameInput?.value?.trim();
+    
+    console.log('🔍 confirmQuickJoin - selectedRoomCode:', selectedRoomCode);
+    console.log('🔍 confirmQuickJoin - playerName:', playerName);
     
     if (!playerName) {
         showNotification('Voer je naam in!', 'error');
@@ -1127,15 +1130,19 @@ async function confirmQuickJoin() {
         showNotification('Joining lobby...', 'info');
         
         // Join the room
+        const joinData = {
+            roomCode: selectedRoomCode,
+            playerName: playerName
+        };
+        
+        console.log('📤 Sending join data:', joinData);
+        
         const response = await fetch('/api/room/join', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                roomCode: selectedRoomCode,
-                playerName: playerName
-            })
+            body: JSON.stringify(joinData)
         });
         
         if (!response.ok) {
@@ -1166,9 +1173,13 @@ async function confirmQuickJoin() {
         // Show lobby screen
         showLobby(data.room);
         
+        // Reset selected room code after successful join
+        selectedRoomCode = null;
+        
     } catch (error) {
         console.error('❌ Error joining room:', error);
         showNotification(`Kon niet joinen: ${error.message}`, 'error');
+        // Don't reset selectedRoomCode on error so user can try again
     }
 }
 

@@ -781,11 +781,15 @@ app.post('/api/room/create', async (req, res) => {
 // Join room API
 app.post('/api/room/join', async (req, res) => {
     try {
+        console.log('📥 Raw request body:', req.body);
+        console.log('📥 Request headers:', req.headers);
+        
         const { roomCode, playerName } = req.body;
-        console.log(`🚀 Join request for room: ${roomCode}, player: ${playerName}`);
+        console.log(`🚀 Join request for room: "${roomCode}", player: "${playerName}"`);
+        console.log(`🚀 Room code type: ${typeof roomCode}, Player name type: ${typeof playerName}`);
         
         if (!roomCode || !playerName) {
-            console.log('❌ Missing roomCode or playerName');
+            console.log('❌ Missing roomCode or playerName - roomCode:', roomCode, 'playerName:', playerName);
             return res.status(400).json({ error: 'Room code and player name are required' });
         }
         
