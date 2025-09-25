@@ -41,55 +41,82 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeSocket() {
     try {
+        console.log('🔌 Initializing Socket.IO connection...');
+        
         socket = io({
             transports: ['polling'],
-            timeout: 10000,
-            forceNew: true
+            timeout: 15000,
+            forceNew: true,
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionAttempts: 5
         });
         
         // Connection events
         socket.on('connect', () => {
-            console.log('🔌 Connected to server');
+            console.log('🔌 Connected to server successfully');
             hideLoading();
         });
         
-        socket.on('disconnect', () => {
-            console.log('🔌 Disconnected from server');
-            showNotification('Connection lost. Reconnecting...', 'error');
+        socket.on('disconnect', (reason) => {
+            console.log('🔌 Disconnected from server:', reason);
+            if (reason === 'io server disconnect') {
+                // Server disconnected, try to reconnect
+                showNotification('Server disconnected. Reconnecting...', 'error');
+            } else {
+                showNotification('Connection lost. Reconnecting...', 'error');
+            }
         });
         
         socket.on('connect_error', (error) => {
             console.error('❌ Connection error:', error);
-            showNotification('Connection failed. Trying alternative method...', 'error');
-            // Fallback to API-based system after 3 seconds
-            setTimeout(() => {
-                if (!socket.connected) {
-                    console.log('🔄 Switching to API-based system');
-                    initializeAPIFallback();
-                }
-            }, 3000);
+            showNotification('Connection failed. Retrying...', 'error');
         });
+        
+        socket.on('reconnect', (attemptNumber) => {
+            console.log('🔄 Reconnected after', attemptNumber, 'attempts');
+            showNotification('Reconnected successfully!', 'success');
+        });
+        
+        socket.on('reconnect_error', (error) => {
+            console.error('❌ Reconnection error:', error);
+        });
+        
+        socket.on('reconnect_failed', () => {
+            console.error('❌ Reconnection failed, switching to API mode');
+            showNotification('Connection failed. Using offline mode...', 'error');
+            initializeAPIFallback();
+        });
+        
+        // Add a timeout to hide loading if connection takes too long
+        setTimeout(() => {
+            if (!socket || !socket.connected) {
+                console.log('⏰ Connection timeout, hiding loading');
+                hideLoading();
+            }
+        }, 5000);
+        
+        // Room events
+        socket.on('roomCreated', handleRoomCreated);
+        socket.on('playerJoined', handlePlayerJoined);
+        socket.on('playerLeft', handlePlayerLeft);
+        socket.on('hostChanged', handleHostChanged);
+        socket.on('roomUpdate', handleRoomUpdate);
+        socket.on('error', handleError);
+        
+        // Game events
+        socket.on('gameStarted', handleGameStarted);
+        socket.on('gameQuestion', handleGameQuestion);
+        socket.on('gameResults', handleGameResults);
+        socket.on('countdown', handleCountdown);
+        socket.on('gameStart', handleGameStart);
         
     } catch (error) {
         console.error('❌ Failed to initialize socket:', error);
         showNotification('Socket connection failed. Using API mode...', 'error');
+        hideLoading();
         initializeAPIFallback();
     }
-}
-    
-    // Room events
-    socket.on('roomCreated', handleRoomCreated);
-    socket.on('playerJoined', handlePlayerJoined);
-    socket.on('playerLeft', handlePlayerLeft);
-    socket.on('hostChanged', handleHostChanged);
-    socket.on('error', handleError);
-    
-    // Game events
-    socket.on('gameStarted', handleGameStarted);
-    socket.on('gameQuestion', handleGameQuestion);
-    socket.on('gameResults', handleGameResults);
-    socket.on('countdown', handleCountdown);
-    socket.on('gameStart', handleGameStart);
 }
 
 // ============================================================================
@@ -230,6 +257,14 @@ function handleHostChanged(data) {
     }
     
     updateLobby();
+}
+
+function handleRoomUpdate(data) {
+    console.log('🏠 Room update received:', data);
+    
+    if (currentRoom === data.code) {
+        updateLobby(data);
+    }
 }
 
 function handleError(data) {

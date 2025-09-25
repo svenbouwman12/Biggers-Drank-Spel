@@ -387,6 +387,15 @@ io.on('connection', (socket) => {
                     players: Array.from(room.players.values())
                 }
             });
+            
+            // Also emit room update to ensure host sees the room
+            socket.emit('roomUpdate', {
+                code: roomCode,
+                hostName: hostName,
+                gameType: gameType,
+                playerCount: 1,
+                players: Array.from(room.players.values())
+            });
         } catch (error) {
             console.error('❌ Error creating room:', error);
             socket.emit('error', { message: 'Failed to create room' });
@@ -441,6 +450,7 @@ io.on('connection', (socket) => {
             console.log(`👤 Player joined: ${playerName} to room ${roomCode}`);
             
             // Notify all players in room
+            console.log(`📢 Broadcasting playerJoined to room ${roomCode}`);
             io.to(roomCode).emit('playerJoined', {
                 player: player,
                 room: {
@@ -450,6 +460,15 @@ io.on('connection', (socket) => {
                     playerCount: room.players.size,
                     players: Array.from(room.players.values())
                 }
+            });
+            
+            // Also emit a room update to ensure everyone is synced
+            io.to(roomCode).emit('roomUpdate', {
+                code: roomCode,
+                hostName: room.hostName,
+                gameType: room.gameType,
+                playerCount: room.players.size,
+                players: Array.from(room.players.values())
             });
         } catch (error) {
             console.error('❌ Error joining room:', error);
