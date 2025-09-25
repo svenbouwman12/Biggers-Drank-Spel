@@ -303,6 +303,7 @@ async function startGameAPI(gameType) {
         if (response.ok) {
             const data = await response.json();
             console.log('✅ Game started via API:', data);
+            data.skipNotification = true; // Skip notification since we'll show it in polling
             handleGameStarted(data);
         } else {
             const error = await response.json();
@@ -329,7 +330,11 @@ async function startGameAPI(gameType) {
 
 function handleGameStarted(data) {
     console.log('🎮 Game started:', data);
-    showNotification('Game started!', 'success');
+    
+    // Don't show duplicate notification if we already showed one
+    if (!data.skipNotification) {
+        showNotification('Game started!', 'success');
+    }
     
     // Switch to game screen
     showScreen('gameScreen');
@@ -432,13 +437,28 @@ function stopPolling() {
 
 function updateLobby(data) {
     if (currentRoomData) {
+        // Check if game state changed from lobby to playing
+        const gameStateChanged = currentRoomData.gameState !== data.gameState;
+        
         // Only show lobby if we're not in a game
         if (data.gameState === 'lobby' || data.gameState === 'waiting') {
             showLobby(data);
         } else if (data.gameState === 'playing') {
-            // Update current room data but don't switch to lobby
-            currentRoomData = data;
-            console.log('🎮 Game is active, staying on current screen');
+            // If game state changed to playing, switch to game screen
+            if (gameStateChanged && currentRoomData.gameState === 'lobby') {
+                console.log('🎮 Game started! Switching to game screen for all players');
+                showNotification('🎮 Game started!', 'success');
+                handleGameStarted({
+                    success: true,
+                    gameType: data.gameType || 'mostLikelyTo',
+                    players: data.players,
+                    playerCount: data.playerCount
+                });
+            } else {
+                // Update current room data but don't switch to lobby
+                currentRoomData = data;
+                console.log('🎮 Game is active, staying on current screen');
+            }
         } else {
             // Fallback: show lobby for unknown states
             showLobby(data);
