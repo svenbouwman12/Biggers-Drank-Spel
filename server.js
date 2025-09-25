@@ -297,6 +297,7 @@ function generateRoomCode() {
     for (let i = 0; i < 4; i++) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
+    console.log('🏠 Generated room code:', result, '(length:', result.length + ')');
     return result;
 }
 
@@ -788,6 +789,16 @@ function processVotes(roomCode) {
 // Serve main page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Test endpoint to check room code generation
+app.get('/api/test-room-code', (req, res) => {
+    const roomCode = generateRoomCode();
+    res.json({
+        roomCode: roomCode,
+        length: roomCode.length,
+        timestamp: new Date().toISOString()
+    });
 });
 
 // API Routes for Vercel compatibility
