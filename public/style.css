@@ -945,6 +945,12 @@ body {
    LOBBY BROWSER STYLES
    ============================================================================ */
 
+/* Lobby Browser Screen - inherits from .screen */
+
+.lobby-browser-content {
+    padding: 2rem;
+}
+
 /* Lobby Browser Layout */
 .lobbies-list {
     display: flex;

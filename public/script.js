@@ -817,6 +817,19 @@ function showLobbyBrowser() {
     if (lobbyScreen) {
         lobbyScreen.classList.add('active');
         console.log('✅ Lobby browser screen activated');
+        
+        // Debug: Check which screens are active
+        const activeScreens = document.querySelectorAll('.screen.active');
+        console.log('📱 Active screens:', Array.from(activeScreens).map(s => s.id));
+        
+        // Debug: Check screen visibility
+        const computedStyle = window.getComputedStyle(lobbyScreen);
+        console.log('👁️ Screen visibility:', {
+            display: computedStyle.display,
+            visibility: computedStyle.visibility,
+            opacity: computedStyle.opacity
+        });
+        
     } else {
         console.error('❌ Lobby browser screen not found!');
         return;
