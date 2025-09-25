@@ -238,8 +238,16 @@ function startGame() {
 }
 
 async function startGameAPI(gameType) {
+    const startBtn = document.getElementById('startGameBtn');
+    
     try {
         console.log('🎮 Starting game via API:', gameType);
+        
+        // Disable button to prevent double clicks
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.textContent = 'Starting...';
+        }
         
         const response = await fetch('/api/game/start', {
             method: 'POST',
@@ -260,17 +268,62 @@ async function startGameAPI(gameType) {
             const error = await response.json();
             console.error('❌ Failed to start game:', error);
             showNotification(error.error || 'Failed to start game', 'error');
+            
+            // Re-enable button on error
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.innerHTML = '<span class="button-icon">🚀</span><span class="button-text">Start Game</span>';
+            }
         }
     } catch (error) {
         console.error('❌ Error starting game:', error);
         showNotification('Failed to start game', 'error');
+        
+        // Re-enable button on error
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.innerHTML = '<span class="button-icon">🚀</span><span class="button-text">Start Game</span>';
+        }
     }
 }
 
 function handleGameStarted(data) {
     console.log('🎮 Game started:', data);
     showNotification('Game started!', 'success');
-    // TODO: Implement game screen
+    
+    // Switch to game screen
+    showScreen('gameScreen');
+    
+    // Update game title
+    const gameTitle = document.getElementById('gameTitle');
+    if (gameTitle) {
+        gameTitle.textContent = `🎮 ${data.gameType === 'mostLikelyTo' ? 'Most Likely To' : 'Game'} - Room ${currentRoom}`;
+    }
+    
+    // Show a simple game interface for now
+    const gameContent = document.getElementById('gameContent');
+    if (gameContent) {
+        gameContent.innerHTML = `
+            <div class="game-question">
+                <h3>🎉 Game Started!</h3>
+                <p>Room: <strong>${currentRoom}</strong></p>
+                <p>Players: <strong>${data.players.length}</strong></p>
+                <p>Game Type: <strong>${data.gameType}</strong></p>
+                
+                <div class="game-actions">
+                    <button class="glass-button primary" onclick="nextRound()">
+                        <span class="button-icon">▶️</span>
+                        <span class="button-text">Next Round</span>
+                    </button>
+                    
+                    <button class="glass-button secondary" onclick="backToLobby()">
+                        <span class="button-icon">🏠</span>
+                        <span class="button-text">Back to Lobby</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
 }
 
 function leaveLobby() {
@@ -378,7 +431,61 @@ function showJoinForm() {
 
 function nextRound() {
     console.log('🎮 Next round requested');
-    showNotification('Next round functionality coming soon!', 'info');
+    
+    // Show a sample "Most Likely To" question
+    const gameContent = document.getElementById('gameContent');
+    if (gameContent) {
+        const questions = [
+            "Wie zou het eerst dronken worden?",
+            "Wie zou het eerst een tattoo laten zetten?",
+            "Wie zou het eerst trouwen?",
+            "Wie zou het eerst een miljoen verdienen?",
+            "Wie zou het eerst een boek schrijven?",
+            "Wie zou het eerst een wereldreis maken?",
+            "Wie zou het eerst een eigen bedrijf starten?",
+            "Wie zou het eerst een huis kopen?",
+            "Wie zou het eerst een kind krijgen?",
+            "Wie zou het eerst een beroemdheid ontmoeten?"
+        ];
+        
+        const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
+        
+        gameContent.innerHTML = `
+            <div class="game-question">
+                <h3>❓ Most Likely To...</h3>
+                <p class="question-text">${randomQuestion}</p>
+                
+                <div class="voting-area">
+                    <p>Stem op wie jij denkt dat het meest waarschijnlijk is:</p>
+                    <div class="players-voting">
+                        ${currentRoomData ? currentRoomData.players.map(player => `
+                            <button class="player-vote-button" onclick="voteForPlayer('${player.id}', '${player.name}')">
+                                <span class="player-avatar">${player.avatar}</span>
+                                <span class="player-name">${player.name}</span>
+                            </button>
+                        `).join('') : ''}
+                    </div>
+                </div>
+                
+                <div class="game-actions">
+                    <button class="glass-button secondary" onclick="backToLobby()">
+                        <span class="button-icon">🏠</span>
+                        <span class="button-text">Back to Lobby</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    showNotification('Vote voor wie jij denkt dat het meest waarschijnlijk is!', 'info');
+}
+
+function voteForPlayer(playerId, playerName) {
+    console.log(`🗳️ Voted for: ${playerName}`);
+    showNotification(`Je hebt gestemd op ${playerName}!`, 'success');
+    
+    // TODO: Send vote to server
+    // For now, just show a confirmation
 }
 
 function backToLobby() {
