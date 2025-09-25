@@ -229,7 +229,7 @@ app.post('/api/room/create', async (req, res) => {
                 code: roomCode,
                 host_name: hostName,
                 host_id: hostId,
-                game_type: gameType || 'simpleTest',
+                game_type: 'mixed', // Fallback to 'mixed' until database is updated
                 status: 'lobby',
                 max_players: 8,
                 current_players: 1,

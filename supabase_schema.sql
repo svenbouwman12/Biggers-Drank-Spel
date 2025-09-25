@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS rooms (
     code VARCHAR(4) UNIQUE NOT NULL,
     host_name VARCHAR(100) NOT NULL,
     host_id VARCHAR(100), -- Socket ID or user ID
-    game_type VARCHAR(20) NOT NULL DEFAULT 'mixed' CHECK (game_type IN ('mixed', 'mostLikelyTo', 'truthOrDrink', 'speedTap', 'quiz')),
+    game_type VARCHAR(20) NOT NULL DEFAULT 'simpleTest' CHECK (game_type IN ('mixed', 'mostLikelyTo', 'truthOrDrink', 'speedTap', 'quiz', 'simpleTest')),
     status VARCHAR(20) NOT NULL DEFAULT 'lobby' CHECK (status IN ('lobby', 'playing', 'finished', 'closed')),
     max_players INTEGER DEFAULT 8 CHECK (max_players >= 2 AND max_players <= 20),
     current_players INTEGER DEFAULT 0,
