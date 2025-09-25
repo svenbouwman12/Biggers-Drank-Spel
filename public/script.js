@@ -1114,6 +1114,12 @@ async function confirmQuickJoin() {
     console.log(`🚀 Joining room ${selectedRoomCode} as ${playerName}`);
     
     try {
+        // Debug: Check if room exists first
+        console.log(`🔍 Debug: Checking room ${selectedRoomCode}`);
+        const debugResponse = await fetch(`/api/debug/room/${selectedRoomCode}`);
+        const debugData = await debugResponse.json();
+        console.log('🔍 Debug response:', debugData);
+        
         // Close popup first
         closeQuickJoinPopup();
         
@@ -1133,8 +1139,15 @@ async function confirmQuickJoin() {
         });
         
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to join room');
+            let errorMessage = 'Failed to join room';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorData.details || errorMessage;
+                console.error('❌ Join error details:', errorData);
+            } catch (e) {
+                console.error('❌ Failed to parse error response');
+            }
+            throw new Error(errorMessage);
         }
         
         const data = await response.json();

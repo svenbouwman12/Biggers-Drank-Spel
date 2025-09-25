@@ -782,9 +782,16 @@ app.post('/api/room/create', async (req, res) => {
 app.post('/api/room/join', async (req, res) => {
     try {
         const { roomCode, playerName } = req.body;
+        console.log(`🚀 Join request for room: ${roomCode}, player: ${playerName}`);
+        
+        if (!roomCode || !playerName) {
+            console.log('❌ Missing roomCode or playerName');
+            return res.status(400).json({ error: 'Room code and player name are required' });
+        }
         
         // Try to get room from memory first, then from database
         let room = rooms.get(roomCode);
+        console.log(`📋 Room in memory: ${room ? 'found' : 'not found'}`);
         
         if (!room) {
             console.log(`🔄 Room ${roomCode} not in memory for join, checking database...`);
@@ -795,9 +802,17 @@ app.post('/api/room/join', async (req, res) => {
                 .eq('code', roomCode)
                 .single();
                 
-            if (roomError || !roomData) {
+            if (roomError) {
+                console.error(`❌ Database error for room ${roomCode}:`, roomError);
+                return res.status(500).json({ error: 'Database error', details: roomError.message });
+            }
+            
+            if (!roomData) {
+                console.log(`❌ Room ${roomCode} not found in database`);
                 return res.status(404).json({ error: 'Room not found' });
             }
+            
+            console.log(`✅ Found room ${roomCode} in database:`, roomData);
             
             // Get existing players from database
             const { data: playersData, error: playersError } = await supabase
@@ -1204,6 +1219,42 @@ app.get('/api/lobbies/test', async (req, res) => {
     } catch (error) {
         console.error('❌ Test error:', error);
         res.status(500).json({ error: 'Test failed' });
+    }
+});
+
+// Debug endpoint to check if room exists
+app.get('/api/debug/room/:roomCode', async (req, res) => {
+    try {
+        const roomCode = req.params.roomCode;
+        console.log(`🔍 Debug: Checking room ${roomCode}`);
+        
+        // Check in memory
+        const roomInMemory = rooms.get(roomCode);
+        console.log(`📋 Room in memory: ${roomInMemory ? 'found' : 'not found'}`);
+        
+        // Check in database
+        const { data: roomData, error: roomError } = await supabase
+            .from('rooms')
+            .select('*')
+            .eq('code', roomCode)
+            .single();
+            
+        res.json({
+            success: true,
+            roomCode: roomCode,
+            inMemory: !!roomInMemory,
+            inDatabase: !!roomData,
+            databaseError: roomError,
+            roomData: roomData,
+            memoryRoom: roomInMemory ? {
+                code: roomInMemory.code,
+                hostName: roomInMemory.hostName,
+                playerCount: roomInMemory.players.size
+            } : null
+        });
+    } catch (error) {
+        console.error('❌ Debug error:', error);
+        res.status(500).json({ error: 'Debug failed', details: error.message });
     }
 });
 
