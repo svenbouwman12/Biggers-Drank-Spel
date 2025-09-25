@@ -902,22 +902,14 @@ async function refreshLobbies() {
 function updateLobbiesDisplay() {
     console.log('🔄 Updating lobbies display...');
     
-    const loadingState = document.getElementById('lobbiesLoading');
     const noLobbiesState = document.getElementById('noLobbies');
     const lobbiesList = document.getElementById('lobbiesList');
     
     console.log('📋 Elements found:', {
-        loadingState: !!loadingState,
         noLobbiesState: !!noLobbiesState,
         lobbiesList: !!lobbiesList,
         lobbiesCount: lobbiesData.length
     });
-    
-    // Hide loading state
-    if (loadingState) {
-        loadingState.classList.add('hidden');
-        console.log('✅ Loading state hidden');
-    }
     
     if (lobbiesData.length === 0) {
         console.log('📋 No lobbies - showing empty state');
