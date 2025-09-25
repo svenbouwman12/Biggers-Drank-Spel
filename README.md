@@ -30,12 +30,14 @@ Een moderne multiplayer online drankspel applicatie met lobby, join-code en mini
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### **Local Development**
+
+#### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-### 2. Setup Supabase Database
+#### 2. Setup Supabase Database
 ```bash
 # Option A: Automatic installation
 node install_supabase.js
@@ -47,15 +49,44 @@ node install_supabase.js
 # 4. Click Run
 ```
 
-### 3. Start Server
+#### 3. Start Server
 ```bash
 npm start
 ```
 
-### 4. Open Browser
+#### 4. Open Browser
 ```
 http://localhost:3000
 ```
+
+### **Production Deployment**
+
+#### **Option A: One-Click Deploy**
+```bash
+# Run deployment script
+./deploy.sh
+```
+
+#### **Option B: Vercel Dashboard**
+1. Go to [vercel.com](https://vercel.com)
+2. Click "New Project"
+3. Import from GitHub: `svenbouwman12/Biggers-Drank-Spel`
+4. Deploy
+
+#### **Option C: Vercel CLI**
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel --prod
+```
+
+### **Post-Deployment**
+1. **Install Database Schema** in Supabase
+2. **Update CORS Settings** in Supabase dashboard
+3. **Test Application** at your Vercel URL
+4. **Configure Custom Domain** (optional)
 
 ## 📁 Project Structure
 
