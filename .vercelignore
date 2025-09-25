@@ -1,0 +1,20 @@
+# Ignore files for Vercel deployment
+node_modules
+.git
+.DS_Store
+*.log
+.env
+.env.local
+.env.production
+.env.development
+
+# Development files
+install_supabase.js
+supabase_schema.sql
+supabase_integration.js
+SUPABASE_SETUP.md
+
+# Test files
+test_*
+*_test.js
+*.test.js
