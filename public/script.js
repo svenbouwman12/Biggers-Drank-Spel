@@ -340,14 +340,19 @@ function updateLobby(data) {
 
 function showScreen(screenId) {
     const screens = document.querySelectorAll('.screen');
-    screens.forEach(screen => screen.style.display = 'none');
+    screens.forEach(screen => {
+        if (screen) {
+            screen.style.display = 'none';
+        }
+    });
     
     const targetScreen = document.getElementById(screenId);
     if (targetScreen) {
         targetScreen.style.display = 'block';
+        console.log(`📱 Switching to screen: ${screenId}`);
+    } else {
+        console.warn(`⚠️ Screen not found: ${screenId}`);
     }
-    
-    console.log(`📱 Switching to screen: ${screenId}`);
 }
 
 function showHome() {
@@ -355,24 +360,33 @@ function showHome() {
 }
 
 function showLoading(message = 'Loading...') {
-    const loading = document.getElementById('loading');
+    const loading = document.getElementById('loadingOverlay');
     const loadingText = document.getElementById('loadingText');
     
     if (loadingText) {
         loadingText.textContent = message;
     }
     
-    loading.style.display = 'flex';
+    if (loading) {
+        loading.style.display = 'flex';
+    }
 }
 
 function hideLoading() {
-    const loading = document.getElementById('loading');
-    loading.style.display = 'none';
+    const loading = document.getElementById('loadingOverlay');
+    if (loading) {
+        loading.style.display = 'none';
+    }
 }
 
 function showNotification(message, type = 'info') {
     const notification = document.getElementById('notification');
     const notificationText = document.getElementById('notificationText');
+    
+    if (!notification) {
+        console.warn('⚠️ Notification element not found');
+        return;
+    }
     
     if (notificationText) {
         notificationText.textContent = message;
