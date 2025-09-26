@@ -693,8 +693,21 @@ function startPolling(roomCode) {
                     });
                 }
                 
+                // Check if players left
+                if (currentRoomData && data.playerCount < currentRoomData.playerCount) {
+                    const leftPlayers = currentRoomData.players.filter(p => 
+                        !data.players.find(cp => cp.id === p.id)
+                    );
+                    leftPlayers.forEach(player => {
+                        showNotification(`${player.name} left the game`, 'warning');
+                    });
+                }
+                
                 // Update lobby if we're in lobby screen
                 if (currentRoom === data.code) {
+                    // Add timestamp to track updates
+                    data.lastUpdated = Date.now();
+                    
                     // Add small delay after game start to allow database sync
                     if (data.gameState === 'playing' && currentRoomData && currentRoomData.gameState === 'lobby') {
                         console.log('🎮 Game state changed to playing, waiting for database sync...');
@@ -723,7 +736,7 @@ function startPolling(roomCode) {
         } catch (error) {
             console.error('❌ Polling error:', error);
         }
-    }, 2000); // Poll every 2 seconds for better real-time feel
+    }, 1000); // Poll every 1 second for better real-time feel
 }
 
 function stopPolling() {
@@ -738,9 +751,16 @@ function updateLobby(data) {
         // Check if game state changed from lobby to playing
         const gameStateChanged = currentRoomData.gameState !== data.gameState;
         
+        // Check if player count changed (someone joined or left)
+        const playerCountChanged = currentRoomData.playerCount !== data.playerCount;
+        
         // Only show lobby if we're not in a game
         if (data.gameState === 'lobby' || data.gameState === 'waiting') {
-            showLobby(data);
+            // Always update lobby if player count changed or it's a fresh update
+            if (playerCountChanged || !currentRoomData.lastUpdated) {
+                console.log('🔄 Updating lobby due to player changes');
+                showLobby(data);
+            }
         } else if (data.gameState === 'playing') {
             // If game state changed to playing, switch to game screen
             if (gameStateChanged && currentRoomData.gameState === 'lobby') {
