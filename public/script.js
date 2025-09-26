@@ -1296,27 +1296,23 @@ async function leaveLobby() {
         // Stop polling
         stopPolling();
         
-        // Trigger cleanup of empty rooms
-        try {
-            console.log('🧹 Triggering cleanup of empty rooms...');
-            await fetch('/api/cleanup/empty-rooms', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            console.log('✅ Cleanup triggered successfully');
-        } catch (cleanupError) {
-            console.log('⚠️ Cleanup failed, but leave was successful:', cleanupError);
-        }
-        
-        // Show success message
+        // Show success message immediately
         showNotification('Lobby verlaten!', 'success');
         
-        // Refresh page after a short delay
-        setTimeout(() => {
-            window.location.reload();
-        }, 1500);
+        // Refresh page immediately
+        window.location.reload();
+        
+        // Trigger cleanup of empty rooms in background (don't wait for it)
+        fetch('/api/cleanup/empty-rooms', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(() => {
+            console.log('✅ Cleanup triggered successfully');
+        }).catch(cleanupError => {
+            console.log('⚠️ Cleanup failed, but leave was successful:', cleanupError);
+        });
         
     } catch (error) {
         console.error('❌ Error leaving room:', error);
