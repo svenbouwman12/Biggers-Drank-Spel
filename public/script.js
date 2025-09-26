@@ -1232,10 +1232,16 @@ async function confirmQuickJoin() {
 
 // Leave lobby function
 async function leaveLobby() {
+    console.log('🚪 Leave lobby function called!');
+    
     const currentPlayer = JSON.parse(localStorage.getItem('currentPlayer') || '{}');
     const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
     
+    console.log('🔍 Current player:', currentPlayer);
+    console.log('🔍 Current room:', currentRoom);
+    
     if (!currentPlayer.id || !currentRoom.code) {
+        console.log('❌ Missing player ID or room code');
         showNotification('Geen actieve lobby gevonden!', 'error');
         return;
     }
