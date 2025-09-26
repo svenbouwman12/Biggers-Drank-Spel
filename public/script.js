@@ -902,7 +902,7 @@ function startCleanupInterval() {
         clearInterval(window.cleanupInterval);
     }
     
-    // Cleanup every 30 seconds
+    // Cleanup every 10 seconds for faster cleanup
     window.cleanupInterval = setInterval(async () => {
         try {
             console.log('🧹 Periodic cleanup of empty rooms...');
@@ -916,9 +916,9 @@ function startCleanupInterval() {
         } catch (error) {
             console.log('⚠️ Periodic cleanup failed:', error);
         }
-    }, 30000); // 30 seconds
+    }, 10000); // 10 seconds for faster cleanup
     
-    console.log('🧹 Periodic cleanup started (every 30 seconds)');
+    console.log('🧹 Periodic cleanup started (every 10 seconds)');
 }
 
 function stopLobbyRefresh() {
@@ -1296,23 +1296,8 @@ async function leaveLobby() {
         // Stop polling
         stopPolling();
         
-        // Show success message immediately
-        showNotification('Lobby verlaten!', 'success');
-        
-        // Refresh page immediately
+        // Refresh page immediately - no delay, no notification
         window.location.reload();
-        
-        // Trigger cleanup of empty rooms in background (don't wait for it)
-        fetch('/api/cleanup/empty-rooms', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        }).then(() => {
-            console.log('✅ Cleanup triggered successfully');
-        }).catch(cleanupError => {
-            console.log('⚠️ Cleanup failed, but leave was successful:', cleanupError);
-        });
         
     } catch (error) {
         console.error('❌ Error leaving room:', error);
