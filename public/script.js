@@ -891,7 +891,7 @@ function startLobbyRefresh() {
     
     lobbyRefreshInterval = setInterval(() => {
         refreshLobbies();
-    }, 1000); // 1 second for real-time updates
+    }, 500); // 0.5 seconds for real-time updates
     
     console.log('🔄 Lobby auto-refresh started');
 }
@@ -902,7 +902,7 @@ function startCleanupInterval() {
         clearInterval(window.cleanupInterval);
     }
     
-    // Cleanup every 5 seconds for immediate cleanup of empty rooms
+    // Cleanup every 3 seconds for immediate cleanup of empty rooms
     window.cleanupInterval = setInterval(async () => {
         try {
             console.log('🧹 Periodic cleanup of empty rooms...');
@@ -933,12 +933,18 @@ function startCleanupInterval() {
                 console.log('🔧 No rooms deleted by cleanup, checking for manual cleanup...');
                 await manualCleanupEmptyRooms();
             }
+            
+            // Force refresh lobbies after cleanup to show changes immediately
+            if (result.deletedCount > 0) {
+                console.log('🔄 Rooms deleted, forcing lobby refresh...');
+                await refreshLobbies();
+            }
         } catch (error) {
             console.log('⚠️ Periodic cleanup failed:', error);
         }
-    }, 5000); // 5 seconds for immediate cleanup
+    }, 3000); // 3 seconds for immediate cleanup
     
-    console.log('🧹 Periodic cleanup started (every 5 seconds)');
+    console.log('🧹 Periodic cleanup started (every 3 seconds)');
 }
 
 function stopLobbyRefresh() {
@@ -986,6 +992,12 @@ async function manualCleanupEmptyRooms() {
                     if (deleteResponse.ok) {
                         const deleteResult = await deleteResponse.json();
                         console.log(`✅ Manual cleanup result for ${room.code}:`, deleteResult);
+                        
+                        // If room was deleted, force refresh lobbies
+                        if (deleteResult.deletedCount > 0) {
+                            console.log(`🔄 Room ${room.code} deleted, forcing lobby refresh...`);
+                            await refreshLobbies();
+                        }
                     } else {
                         console.log(`⚠️ Manual cleanup failed for ${room.code}`);
                     }
