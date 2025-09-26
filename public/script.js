@@ -648,22 +648,67 @@ function getVoteCount(currentGame, optionIndex) {
     return count;
 }
 
-function leaveLobby() {
-    // Stop polling
-    stopPolling();
-    
-    currentRoom = null;
-    currentPlayer = null;
-    gameState = {
-        players: [],
-        currentGame: null,
-        currentQuestion: null,
-        scores: {},
-        round: 1,
-        maxRounds: 5
-    };
-    
-    showHome();
+async function leaveLobby() {
+    try {
+        console.log('🚪 Leaving lobby...');
+        
+        // Get current player and room data
+        const currentPlayer = JSON.parse(localStorage.getItem('currentPlayer') || '{}');
+        const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+        
+        if (!currentPlayer.id || !currentRoom.code) {
+            console.log('❌ Missing player ID or room code');
+            showNotification('Error: Missing player data', 'error');
+            return;
+        }
+        
+        console.log('🚪 Leaving lobby', currentRoom.code, 'as', currentPlayer.name);
+        
+        // Call leave API
+        const response = await fetch('/api/room/leave', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                playerId: currentPlayer.id,
+                roomCode: currentRoom.code
+            })
+        });
+        
+        if (response.ok) {
+            console.log('✅ Successfully left lobby');
+            showNotification('Left lobby successfully', 'success');
+        } else {
+            console.log('❌ Failed to leave lobby');
+            showNotification('Failed to leave lobby', 'error');
+        }
+    } catch (error) {
+        console.log('❌ Error leaving lobby:', error);
+        showNotification('Error leaving lobby', 'error');
+    } finally {
+        // Always clean up and go home
+        stopPolling();
+        
+        // Clear localStorage
+        localStorage.removeItem('currentPlayer');
+        localStorage.removeItem('currentRoom');
+        
+        // Reset state
+        currentRoom = null;
+        currentPlayer = null;
+        gameState = {
+            players: [],
+            currentGame: null,
+            currentQuestion: null,
+            scores: {},
+            round: 1,
+            maxRounds: 5
+        };
+        
+        // Go home
+        showHome();
+    }
 }
 
 // ============================================================================
