@@ -1251,16 +1251,25 @@ app.post('/api/room/leave', async (req, res) => {
         }
         
         // Update current_players count in rooms table
-        const { error: roomUpdateError } = await supabase
+        // First get current count, then decrement
+        const { data: roomData, error: roomFetchError } = await supabase
             .from('rooms')
-            .update({ 
-                current_players: supabase.raw('current_players - 1')
-            })
-            .eq('code', roomCode);
+            .select('current_players')
+            .eq('code', roomCode)
+            .single();
             
-        if (roomUpdateError) {
-            console.error('❌ Error updating room player count:', roomUpdateError);
-            // Don't fail the request, just log the error
+        if (!roomFetchError && roomData) {
+            const newCount = Math.max(0, (roomData.current_players || 0) - 1);
+            const { error: roomUpdateError } = await supabase
+                .from('rooms')
+                .update({ current_players: newCount })
+                .eq('code', roomCode);
+                
+            if (roomUpdateError) {
+                console.error('❌ Error updating room player count:', roomUpdateError);
+            } else {
+                console.log(`📊 Updated room ${roomCode} player count to ${newCount}`);
+            }
         }
         
         console.log(`✅ Player ${playerId} marked as left from room ${roomCode}`);
