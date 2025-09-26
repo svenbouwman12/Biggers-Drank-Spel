@@ -238,11 +238,15 @@ function showLobby(room) {
         // Always show leave button for now - players can leave anytime
         leaveBtn.style.display = 'inline-flex';
         
-        // Add click event listener for debugging
-        leaveBtn.onclick = function() {
-            console.log('🚪 LEAVE BUTTON CLICKED!');
-            leaveLobby();
-        };
+        // Add click event listener for debugging (only if not already added)
+        if (!leaveBtn.hasAttribute('data-listener-added')) {
+            leaveBtn.onclick = function() {
+                console.log('🚪 LEAVE BUTTON CLICKED!');
+                leaveLobby();
+            };
+            leaveBtn.setAttribute('data-listener-added', 'true');
+            console.log('🚪 Leave button event listener added');
+        }
         
         console.log('🚪 Leave button setup complete:', leaveBtn);
     } else {
