@@ -237,6 +237,16 @@ function showLobby(room) {
     if (leaveBtn) {
         // Always show leave button for now - players can leave anytime
         leaveBtn.style.display = 'inline-flex';
+        
+        // Add click event listener for debugging
+        leaveBtn.onclick = function() {
+            console.log('🚪 LEAVE BUTTON CLICKED!');
+            leaveLobby();
+        };
+        
+        console.log('🚪 Leave button setup complete:', leaveBtn);
+    } else {
+        console.log('❌ Leave button not found!');
     }
     
     // Update players grid
@@ -650,6 +660,7 @@ function getVoteCount(currentGame, optionIndex) {
 
 async function leaveLobby() {
     try {
+        console.log('🚪 LEAVE LOBBY FUNCTION CALLED!');
         console.log('🚪 Leaving lobby...');
         
         // Get current player and room data
