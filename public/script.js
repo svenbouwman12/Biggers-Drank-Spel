@@ -695,9 +695,11 @@ function startPolling(roomCode) {
                 
                 // Check if players left
                 if (currentRoomData && data.playerCount < currentRoomData.playerCount) {
+                    console.log('👋 Player count decreased:', currentRoomData.playerCount, '->', data.playerCount);
                     const leftPlayers = currentRoomData.players.filter(p => 
                         !data.players.find(cp => cp.id === p.id)
                     );
+                    console.log('👋 Players who left:', leftPlayers);
                     leftPlayers.forEach(player => {
                         showNotification(`${player.name} left the game`, 'warning');
                     });
@@ -736,7 +738,7 @@ function startPolling(roomCode) {
         } catch (error) {
             console.error('❌ Polling error:', error);
         }
-    }, 1000); // Poll every 1 second for better real-time feel
+    }, 500); // Poll every 0.5 seconds for better real-time feel
 }
 
 function stopPolling() {
@@ -751,16 +753,11 @@ function updateLobby(data) {
         // Check if game state changed from lobby to playing
         const gameStateChanged = currentRoomData.gameState !== data.gameState;
         
-        // Check if player count changed (someone joined or left)
-        const playerCountChanged = currentRoomData.playerCount !== data.playerCount;
-        
         // Only show lobby if we're not in a game
         if (data.gameState === 'lobby' || data.gameState === 'waiting') {
-            // Always update lobby if player count changed or it's a fresh update
-            if (playerCountChanged || !currentRoomData.lastUpdated) {
-                console.log('🔄 Updating lobby due to player changes');
-                showLobby(data);
-            }
+            // Always update lobby to ensure real-time sync
+            console.log('🔄 Updating lobby for real-time sync');
+            showLobby(data);
         } else if (data.gameState === 'playing') {
             // If game state changed to playing, switch to game screen
             if (gameStateChanged && currentRoomData.gameState === 'lobby') {
