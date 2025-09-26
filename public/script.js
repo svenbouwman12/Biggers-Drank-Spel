@@ -927,6 +927,12 @@ function startCleanupInterval() {
             
             const result = await response.json();
             console.log('✅ Periodic cleanup completed:', result);
+            
+            // If no rooms were deleted, try manual cleanup of known empty rooms
+            if (result.deletedCount === 0) {
+                console.log('🔧 No rooms deleted by cleanup, checking for manual cleanup...');
+                await manualCleanupEmptyRooms();
+            }
         } catch (error) {
             console.log('⚠️ Periodic cleanup failed:', error);
         }
@@ -948,6 +954,50 @@ function stopCleanupInterval() {
         clearInterval(window.cleanupInterval);
         window.cleanupInterval = null;
         console.log('⏹️ Periodic cleanup stopped');
+    }
+}
+
+// Manual cleanup for empty rooms
+async function manualCleanupEmptyRooms() {
+    try {
+        console.log('🔧 Manual cleanup: Checking for empty rooms...');
+        
+        // Get empty rooms from debug endpoint
+        const response = await fetch('/api/debug/empty-rooms');
+        const data = await response.json();
+        
+        if (data.success && data.emptyRooms && data.emptyRooms.length > 0) {
+            console.log(`🔧 Found ${data.emptyRooms.length} empty rooms for manual cleanup:`, data.emptyRooms.map(r => r.code));
+            
+            // For each empty room, try to delete it by calling the leave endpoint
+            for (const room of data.emptyRooms) {
+                try {
+                    console.log(`🔧 Attempting to delete empty room: ${room.code}`);
+                    
+                    // Try to delete the room by calling a special cleanup endpoint
+                    const deleteResponse = await fetch('/api/cleanup/empty-rooms', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ forceCleanup: true, roomCode: room.code })
+                    });
+                    
+                    if (deleteResponse.ok) {
+                        const deleteResult = await deleteResponse.json();
+                        console.log(`✅ Manual cleanup result for ${room.code}:`, deleteResult);
+                    } else {
+                        console.log(`⚠️ Manual cleanup failed for ${room.code}`);
+                    }
+                } catch (error) {
+                    console.log(`❌ Error in manual cleanup for ${room.code}:`, error);
+                }
+            }
+        } else {
+            console.log('🔧 No empty rooms found for manual cleanup');
+        }
+    } catch (error) {
+        console.log('❌ Error in manual cleanup:', error);
     }
 }
 
