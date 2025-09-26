@@ -176,6 +176,12 @@ function handleRoomCreated(data) {
         }
     }
     
+    // Store current player in localStorage for leave functionality
+    if (currentPlayer) {
+        localStorage.setItem('currentPlayer', JSON.stringify(currentPlayer));
+        console.log('💾 Current player stored in localStorage');
+    }
+    
     hideLoading();
     showLobby(data.room);
     generateQRCode(data.roomCode);
@@ -190,6 +196,10 @@ function handlePlayerJoined(data) {
         isHost: false
     };
     
+    // Store current player in localStorage for leave functionality
+    localStorage.setItem('currentPlayer', JSON.stringify(currentPlayer));
+    console.log('💾 Current player stored in localStorage:', currentPlayer);
+    
     hideLoading();
     showLobby(data.room);
     startPolling(data.room.code);
@@ -201,6 +211,9 @@ function handlePlayerJoined(data) {
 
 function showLobby(room) {
     currentRoomData = room;
+    
+    // Store room data in localStorage for leave functionality
+    localStorage.setItem('currentRoom', JSON.stringify(room));
     
     console.log('🏠 Showing lobby for room:', room);
     console.log('👥 Players in room:', room.players);
