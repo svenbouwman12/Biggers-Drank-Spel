@@ -1402,30 +1402,64 @@ async function confirmQuickJoin() {
 }
 
 // Leave lobby function
-// Simple leave lobby function - just works!
+// Enhanced leave lobby function with real-time updates
 async function leaveLobby() {
-    console.log('🚪 SIMPLE LEAVE LOBBY');
+    console.log('🚪 LEAVING LOBBY WITH REAL-TIME UPDATES');
     
     try {
         // Get data
         const player = JSON.parse(localStorage.getItem('currentPlayer') || '{}');
         const room = JSON.parse(localStorage.getItem('currentRoom') || '{}');
         
-        // Call API (don't wait for response)
         if (player.id && room.code) {
-            fetch('/api/room/leave', {
+            console.log(`🚪 Leaving room ${room.code} as ${player.name}`);
+            
+            // Call leave API and wait for response
+            const response = await fetch('/api/room/leave', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ roomCode: room.code, playerId: player.id })
-            }).catch(() => {}); // Ignore errors
+            });
+            
+            if (response.ok) {
+                console.log('✅ Successfully left lobby');
+                
+                // Trigger cleanup to remove empty lobbies
+                fetch('/api/cleanup/empty-rooms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ forceCleanup: true })
+                }).catch(() => {});
+                
+                // Show notification to other players
+                showNotification('👋 Speler heeft de lobby verlaten', 'info');
+            } else {
+                console.log('⚠️ Leave API failed, but continuing...');
+            }
         }
         
-        // Clear and reload immediately
+        // Clear everything
         localStorage.clear();
+        
+        // Stop all polling/intervals
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+        }
+        if (lobbyRefreshInterval) {
+            clearInterval(lobbyRefreshInterval);
+            lobbyRefreshInterval = null;
+        }
+        if (cleanupInterval) {
+            clearInterval(cleanupInterval);
+            cleanupInterval = null;
+        }
+        
+        // Reload page
         window.location.reload();
         
     } catch (error) {
-        // Even if error, just reload
+        console.log('❌ Error:', error);
         localStorage.clear();
         window.location.reload();
     }
