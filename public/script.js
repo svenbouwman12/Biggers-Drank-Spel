@@ -938,6 +938,9 @@ function startCleanupInterval() {
             if (result.deletedCount > 0) {
                 console.log('🔄 Rooms deleted, forcing lobby refresh...');
                 await refreshLobbies();
+                
+                // Show notification to user about cleanup
+                showNotification(`🧹 Cleaned up ${result.deletedCount} empty lobby/lobbies`, 'info');
             }
         } catch (error) {
             console.log('⚠️ Periodic cleanup failed:', error);
@@ -997,6 +1000,9 @@ async function manualCleanupEmptyRooms() {
                         if (deleteResult.deletedCount > 0) {
                             console.log(`🔄 Room ${room.code} deleted, forcing lobby refresh...`);
                             await refreshLobbies();
+                            
+                            // Show notification to user
+                            showNotification(`🧹 Empty lobby ${room.code} removed`, 'info');
                         }
                     } else {
                         console.log(`⚠️ Manual cleanup failed for ${room.code}`);
@@ -1017,6 +1023,11 @@ async function manualCleanupEmptyRooms() {
 async function refreshLobbies() {
     try {
         console.log('🔄 Refreshing lobbies...');
+        
+        // Check if we're on the lobby browser screen
+        const lobbyBrowserScreen = document.getElementById('lobbyBrowserScreen');
+        const isLobbyBrowserVisible = lobbyBrowserScreen && lobbyBrowserScreen.classList.contains('active');
+        console.log('📱 Lobby browser visible:', isLobbyBrowserVisible);
         
         // Add visual refresh indicator
         const refreshButton = document.querySelector('.glass-button.secondary');
