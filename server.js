@@ -1627,6 +1627,7 @@ app.post('/api/cleanup/empty-rooms-all', async (req, res) => {
         }
         
         console.log(`🔍 Checking ${allRooms?.length || 0} total rooms`);
+        console.log('📋 All rooms found:', allRooms?.map(r => ({ code: r.code, current_players: r.current_players, status: r.status })));
         
         let deletedCount = 0;
         
@@ -1713,6 +1714,87 @@ app.post('/api/cleanup/empty-rooms-all', async (req, res) => {
     } catch (error) {
         console.error('❌ Error in comprehensive cleanup:', error);
         res.status(500).json({ error: 'Comprehensive cleanup failed', details: error.message });
+    }
+});
+
+// Test cleanup for specific rooms
+app.post('/api/debug/cleanup-specific', async (req, res) => {
+    try {
+        const { roomCodes } = req.body;
+        console.log('🧪 Testing cleanup for specific rooms:', roomCodes);
+        
+        let deletedCount = 0;
+        
+        for (const roomCode of roomCodes || []) {
+            try {
+                console.log(`🔍 Testing cleanup for room ${roomCode}`);
+                
+                // Count active players for this room
+                const { data: activePlayers, error: countError } = await supabase
+                    .from('players')
+                    .select('id')
+                    .eq('room_id', roomCode)
+                    .is('left_at', null);
+                
+                if (countError) {
+                    console.error(`❌ Error counting players for room ${roomCode}:`, countError);
+                    continue;
+                }
+                
+                const playerCount = activePlayers?.length || 0;
+                console.log(`👥 Room ${roomCode} has ${playerCount} active players`);
+                
+                // If no active players, delete the room
+                if (playerCount === 0) {
+                    console.log(`🗑️ Deleting empty room: ${roomCode}`);
+                    
+                    // Delete all players first (including left ones)
+                    const { error: deletePlayersError } = await supabase
+                        .from('players')
+                        .delete()
+                        .eq('room_id', roomCode);
+                    
+                    if (deletePlayersError) {
+                        console.error(`❌ Error deleting players for room ${roomCode}:`, deletePlayersError);
+                    } else {
+                        console.log(`✅ Deleted players for room ${roomCode}`);
+                    }
+                    
+                    // Delete the room
+                    const { error: deleteRoomError } = await supabase
+                        .from('rooms')
+                        .delete()
+                        .eq('code', roomCode);
+                    
+                    if (deleteRoomError) {
+                        console.error(`❌ Error deleting room ${roomCode}:`, deleteRoomError);
+                    } else {
+                        console.log(`✅ Deleted room ${roomCode}`);
+                    }
+                        
+                    // Remove from memory
+                    rooms.delete(roomCode);
+                    
+                    deletedCount++;
+                    console.log(`✅ Successfully deleted empty room: ${roomCode}`);
+                } else {
+                    console.log(`⚠️ Room ${roomCode} has ${playerCount} active players, not deleting`);
+                }
+                
+            } catch (deleteError) {
+                console.error(`❌ Error processing room ${roomCode}:`, deleteError);
+            }
+        }
+        
+        res.json({
+            success: true,
+            deletedCount: deletedCount,
+            message: `Test cleanup completed: deleted ${deletedCount} rooms`
+        });
+        
+    } catch (error) {
+        console.error('❌ Error in test cleanup:', error);
+        res.status(500).json({ error: 'Test cleanup failed', details: error.message });
     }
 });
 
