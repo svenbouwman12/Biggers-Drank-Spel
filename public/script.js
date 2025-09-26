@@ -906,13 +906,27 @@ function startCleanupInterval() {
     window.cleanupInterval = setInterval(async () => {
         try {
             console.log('🧹 Periodic cleanup of empty rooms...');
-            await fetch('/api/cleanup/empty-rooms', {
+            
+            // Try comprehensive cleanup first, fallback to regular cleanup
+            let response = await fetch('/api/cleanup/empty-rooms-all', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
-            console.log('✅ Periodic cleanup completed');
+            
+            if (!response.ok) {
+                console.log('⚠️ Comprehensive cleanup not available, trying regular cleanup...');
+                response = await fetch('/api/cleanup/empty-rooms', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+            }
+            
+            const result = await response.json();
+            console.log('✅ Periodic cleanup completed:', result);
         } catch (error) {
             console.log('⚠️ Periodic cleanup failed:', error);
         }
