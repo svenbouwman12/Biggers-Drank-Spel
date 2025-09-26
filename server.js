@@ -1300,6 +1300,54 @@ app.post('/api/cleanup/empty-rooms', async (req, res) => {
     try {
         console.log('🧹 Starting cleanup of empty rooms...');
         
+        // Check if this is a forced cleanup for a specific room
+        const { forceCleanup, roomCode } = req.body || {};
+        
+        if (forceCleanup && roomCode) {
+            console.log(`🔧 Force cleanup requested for room: ${roomCode}`);
+            
+            // Directly delete the specific room
+            try {
+                // Delete all players first
+                const { error: deletePlayersError } = await supabase
+                    .from('players')
+                    .delete()
+                    .eq('room_id', roomCode);
+                
+                if (deletePlayersError) {
+                    console.error(`❌ Error deleting players for room ${roomCode}:`, deletePlayersError);
+                } else {
+                    console.log(`✅ Deleted players for room ${roomCode}`);
+                }
+                
+                // Delete the room
+                const { error: deleteRoomError } = await supabase
+                    .from('rooms')
+                    .delete()
+                    .eq('code', roomCode);
+                
+                if (deleteRoomError) {
+                    console.error(`❌ Error deleting room ${roomCode}:`, deleteRoomError);
+                    return res.status(500).json({ error: 'Failed to delete room', details: deleteRoomError.message });
+                } else {
+                    console.log(`✅ Deleted room ${roomCode}`);
+                }
+                
+                // Remove from memory
+                rooms.delete(roomCode);
+                
+                return res.json({ 
+                    success: true, 
+                    message: `Force cleanup completed: deleted room ${roomCode}`,
+                    deletedCount: 1
+                });
+                
+            } catch (error) {
+                console.error(`❌ Error in force cleanup for room ${roomCode}:`, error);
+                return res.status(500).json({ error: 'Force cleanup failed', details: error.message });
+            }
+        }
+        
         // Get all rooms with current_players = 0 for efficient cleanup
         const { data: emptyRooms, error } = await supabase
             .from('rooms')
