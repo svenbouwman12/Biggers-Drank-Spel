@@ -891,7 +891,7 @@ function startLobbyRefresh() {
     
     lobbyRefreshInterval = setInterval(() => {
         refreshLobbies();
-    }, 2000); // 2 seconds for more real-time updates
+    }, 1000); // 1 second for real-time updates
     
     console.log('🔄 Lobby auto-refresh started');
 }

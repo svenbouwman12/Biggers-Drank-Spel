@@ -1239,7 +1239,7 @@ app.post('/api/room/leave', async (req, res) => {
             return res.status(400).json({ error: 'Room code and player ID are required' });
         }
         
-        // Simple approach: just mark player as left
+        // Mark player as left and update current_players count
         const { error: updateError } = await supabase
             .from('players')
             .update({ left_at: new Date().toISOString() })
@@ -1248,6 +1248,19 @@ app.post('/api/room/leave', async (req, res) => {
         if (updateError) {
             console.error('❌ Error updating player leave status:', updateError);
             return res.status(500).json({ error: 'Failed to update player status', details: updateError.message });
+        }
+        
+        // Update current_players count in rooms table
+        const { error: roomUpdateError } = await supabase
+            .from('rooms')
+            .update({ 
+                current_players: supabase.raw('current_players - 1')
+            })
+            .eq('code', roomCode);
+            
+        if (roomUpdateError) {
+            console.error('❌ Error updating room player count:', roomUpdateError);
+            // Don't fail the request, just log the error
         }
         
         console.log(`✅ Player ${playerId} marked as left from room ${roomCode}`);
@@ -1458,19 +1471,24 @@ app.get('/api/lobbies', async (req, res) => {
                     const { data: playersData } = await supabase
                         .from('players')
                         .select('player_name, avatar')
-                        .eq('room_id', room.code);
+                        .eq('room_id', room.code)
+                        .is('left_at', null); // Only count active players
+
+                    // Use the current_players from rooms table as primary source
+                    const actualPlayerCount = room.current_players || 0;
+                    const activePlayers = playersData || [];
 
                     return {
                         code: room.code,
                         hostName: room.host_name,
                         gameType: room.game_type,
                         status: room.status,
-                        currentPlayers: playersData?.length || 0,
+                        currentPlayers: actualPlayerCount, // Use database current_players
                         maxPlayers: room.max_players || 8,
-                        players: playersData || [],
+                        players: activePlayers,
                         createdAt: room.created_at,
                         startedAt: room.started_at,
-                        canJoin: room.status === 'lobby' && (playersData?.length || 0) < (room.max_players || 8)
+                        canJoin: room.status === 'lobby' && actualPlayerCount < (room.max_players || 8)
                     };
                 } catch (playerError) {
                     console.error(`❌ Error fetching players for room ${room.code}:`, playerError);
@@ -1479,7 +1497,7 @@ app.get('/api/lobbies', async (req, res) => {
                         hostName: room.host_name,
                         gameType: room.game_type,
                         status: room.status,
-                        currentPlayers: 0,
+                        currentPlayers: room.current_players || 0, // Use database current_players
                         maxPlayers: room.max_players || 8,
                         players: [],
                         createdAt: room.created_at,
