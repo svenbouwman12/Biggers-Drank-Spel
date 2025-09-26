@@ -1300,21 +1300,24 @@ app.post('/api/cleanup/empty-rooms', async (req, res) => {
     try {
         console.log('🧹 Starting cleanup of empty rooms...');
         
-        // Get all rooms and check which ones have no active players
-        const { data: allRooms, error } = await supabase
+        // Get all rooms with current_players = 0 for efficient cleanup
+        const { data: emptyRooms, error } = await supabase
             .from('rooms')
-            .select('code, id');
+            .select('code, id, current_players')
+            .eq('current_players', 0);
             
         if (error) {
-            console.error('❌ Error fetching rooms:', error);
-            return res.status(500).json({ error: 'Failed to fetch rooms' });
+            console.error('❌ Error fetching empty rooms:', error);
+            return res.status(500).json({ error: 'Failed to fetch empty rooms' });
         }
+        
+        console.log(`🔍 Found ${emptyRooms?.length || 0} rooms with 0 players`);
         
         let deletedCount = 0;
         
-        for (const room of allRooms || []) {
+        for (const room of emptyRooms || []) {
             try {
-                // Count active players for this room
+                // Double-check by counting active players
                 const { data: activePlayers, error: countError } = await supabase
                     .from('players')
                     .select('id')
@@ -1349,6 +1352,13 @@ app.post('/api/cleanup/empty-rooms', async (req, res) => {
                     
                     deletedCount++;
                     console.log(`✅ Deleted empty room: ${room.code}`);
+                } else {
+                    console.log(`⚠️ Room ${room.code} has ${playerCount} active players but current_players = 0, updating count`);
+                    // Fix the count if it's wrong
+                    await supabase
+                        .from('rooms')
+                        .update({ current_players: playerCount })
+                        .eq('code', room.code);
                 }
                 
             } catch (deleteError) {

@@ -902,7 +902,7 @@ function startCleanupInterval() {
         clearInterval(window.cleanupInterval);
     }
     
-    // Cleanup every 10 seconds for faster cleanup
+    // Cleanup every 5 seconds for immediate cleanup of empty rooms
     window.cleanupInterval = setInterval(async () => {
         try {
             console.log('🧹 Periodic cleanup of empty rooms...');
@@ -916,9 +916,9 @@ function startCleanupInterval() {
         } catch (error) {
             console.log('⚠️ Periodic cleanup failed:', error);
         }
-    }, 10000); // 10 seconds for faster cleanup
+    }, 5000); // 5 seconds for immediate cleanup
     
-    console.log('🧹 Periodic cleanup started (every 10 seconds)');
+    console.log('🧹 Periodic cleanup started (every 5 seconds)');
 }
 
 function stopLobbyRefresh() {
