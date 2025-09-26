@@ -24,6 +24,16 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('🎉 Drankspel Multiplayer loaded!');
     console.log('📡 API Mode: Real-time updates via polling');
     
+    // Add global event listener for leave button (always works)
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'leaveLobbyBtn') {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🚪 LEAVE BUTTON CLICKED (global listener)!');
+            leaveLobby();
+        }
+    });
+    
     hideLoading();
     setupEventListeners();
     
@@ -238,15 +248,23 @@ function showLobby(room) {
         // Always show leave button for now - players can leave anytime
         leaveBtn.style.display = 'inline-flex';
         
-        // Add click event listener for debugging (only if not already added)
-        if (!leaveBtn.hasAttribute('data-listener-added')) {
-            leaveBtn.onclick = function() {
-                console.log('🚪 LEAVE BUTTON CLICKED!');
-                leaveLobby();
-            };
-            leaveBtn.setAttribute('data-listener-added', 'true');
-            console.log('🚪 Leave button event listener added');
-        }
+        // Add click event listener for debugging (always add to ensure it works)
+        leaveBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🚪 LEAVE BUTTON CLICKED!');
+            leaveLobby();
+        };
+        
+        // Also add event listener using addEventListener as backup
+        leaveBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🚪 LEAVE BUTTON CLICKED (addEventListener)!');
+            leaveLobby();
+        });
+        
+        console.log('🚪 Leave button event listeners added');
         
         console.log('🚪 Leave button setup complete:', leaveBtn);
     } else {
