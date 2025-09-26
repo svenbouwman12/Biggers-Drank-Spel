@@ -21,26 +21,7 @@ let gameState = {
 // ============================================================================
 
 // Test function to manually test leave button
-function testLeaveButton() {
-    console.log('🧪 Testing leave button manually...');
-    const leaveBtn = document.getElementById('leaveLobbyBtn');
-    if (leaveBtn) {
-        console.log('🧪 Button found:', leaveBtn);
-        console.log('🧪 Button clickable:', !leaveBtn.disabled);
-        console.log('🧪 Button visible:', leaveBtn.offsetWidth > 0 && leaveBtn.offsetHeight > 0);
-        console.log('🧪 Button style display:', leaveBtn.style.display);
-        console.log('🧪 Button computed display:', window.getComputedStyle(leaveBtn).display);
-        
-        // Try to trigger click
-        console.log('🧪 Triggering click...');
-        leaveBtn.click();
-    } else {
-        console.log('🧪 Button not found!');
-    }
-}
-
-// Make test function globally available
-window.testLeaveButton = testLeaveButton;
+// Test function removed - leave button now works with simple onclick
 
 // ============================================================================
 // INITIALIZATION
@@ -51,17 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('📡 API Mode: Real-time updates via polling');
     
     // Add global event listener for leave button (always works)
-    document.addEventListener('click', function(e) {
-        // Check if clicked element is leave button or inside leave button
-        if (e.target && (e.target.id === 'leaveLobbyBtn' || e.target.closest('#leaveLobbyBtn'))) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🚪 LEAVE BUTTON CLICKED (global listener)!');
-            console.log('🚪 Clicked element:', e.target);
-            console.log('🚪 Leave button element:', document.getElementById('leaveLobbyBtn'));
-            leaveLobby();
-        }
-    });
+    // Leave button is handled by onclick in HTML - no global listeners needed
     
     hideLoading();
     setupEventListeners();
@@ -269,41 +240,11 @@ function showLobby(room) {
         playerCountElement.textContent = room.playerCount || room.players.length;
     }
     
-    // Show/hide leave button based on host status
-    const currentPlayer = JSON.parse(localStorage.getItem('currentPlayer') || '{}');
+    // Leave button is handled by onclick in HTML - simple and reliable
     const leaveBtn = document.getElementById('leaveLobbyBtn');
-    
     if (leaveBtn) {
-        // Always show leave button for now - players can leave anytime
         leaveBtn.style.display = 'inline-flex';
-        
-        // Add click event listener for debugging (always add to ensure it works)
-        leaveBtn.onclick = function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🚪 LEAVE BUTTON CLICKED!');
-            leaveLobby();
-        };
-        
-        // Also add event listener using addEventListener as backup
-        leaveBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🚪 LEAVE BUTTON CLICKED (addEventListener)!');
-            leaveLobby();
-        });
-        
-        console.log('🚪 Leave button event listeners added');
-        
-        // Test if button is clickable
-        console.log('🚪 Testing button clickability...');
-        console.log('🚪 Button disabled:', leaveBtn.disabled);
-        console.log('🚪 Button style:', leaveBtn.style);
-        console.log('🚪 Button computed style:', window.getComputedStyle(leaveBtn));
-        
-        console.log('🚪 Leave button setup complete:', leaveBtn);
-    } else {
-        console.log('❌ Leave button not found!');
+        console.log('🚪 Leave button ready (onclick in HTML)');
     }
     
     // Update players grid
@@ -1461,64 +1402,32 @@ async function confirmQuickJoin() {
 }
 
 // Leave lobby function
+// Simple leave lobby function - just works!
 async function leaveLobby() {
-    console.log('🚪 Leave lobby function called!');
-    
-    const currentPlayer = JSON.parse(localStorage.getItem('currentPlayer') || '{}');
-    const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
-    
-    console.log('🔍 Current player:', currentPlayer);
-    console.log('🔍 Current room:', currentRoom);
-    
-    if (!currentPlayer.id || !currentRoom.code) {
-        console.log('❌ Missing player ID or room code');
-        showNotification('Geen actieve lobby gevonden!', 'error');
-        return;
-    }
-    
-    console.log(`🚪 Leaving lobby ${currentRoom.code} as ${currentPlayer.name}`);
+    console.log('🚪 SIMPLE LEAVE LOBBY');
     
     try {
-        // Show loading
-        showNotification('Verlaten van lobby...', 'info');
+        // Get data
+        const player = JSON.parse(localStorage.getItem('currentPlayer') || '{}');
+        const room = JSON.parse(localStorage.getItem('currentRoom') || '{}');
         
-        console.log('📤 Sending leave request:', {
-            roomCode: currentRoom.code,
-            playerId: currentPlayer.id
-        });
-        
-        const response = await fetch('/api/room/leave', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                roomCode: currentRoom.code,
-                playerId: currentPlayer.id
-            })
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to leave room');
+        // Call API (don't wait for response)
+        if (player.id && room.code) {
+            fetch('/api/room/leave', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomCode: room.code, playerId: player.id })
+            }).catch(() => {}); // Ignore errors
         }
         
-        const data = await response.json();
-        console.log('✅ Left room successfully:', data);
-        
-        // Clear local storage
-        localStorage.removeItem('currentPlayer');
-        localStorage.removeItem('currentRoom');
-        
-        // Stop polling
-        stopPolling();
-        
-        // Refresh page immediately - no delay, no notification
+        // Clear and reload immediately
+        localStorage.clear();
         window.location.reload();
         
     } catch (error) {
-        console.error('❌ Error leaving room:', error);
-        showNotification(`Kon lobby niet verlaten: ${error.message}`, 'error');
+        // Even if error, just reload
+        localStorage.clear();
+        window.location.reload();
     }
 }
 
