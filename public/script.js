@@ -17,6 +17,32 @@ let gameState = {
 };
 
 // ============================================================================
+// TEST FUNCTIONS
+// ============================================================================
+
+// Test function to manually test leave button
+function testLeaveButton() {
+    console.log('🧪 Testing leave button manually...');
+    const leaveBtn = document.getElementById('leaveLobbyBtn');
+    if (leaveBtn) {
+        console.log('🧪 Button found:', leaveBtn);
+        console.log('🧪 Button clickable:', !leaveBtn.disabled);
+        console.log('🧪 Button visible:', leaveBtn.offsetWidth > 0 && leaveBtn.offsetHeight > 0);
+        console.log('🧪 Button style display:', leaveBtn.style.display);
+        console.log('🧪 Button computed display:', window.getComputedStyle(leaveBtn).display);
+        
+        // Try to trigger click
+        console.log('🧪 Triggering click...');
+        leaveBtn.click();
+    } else {
+        console.log('🧪 Button not found!');
+    }
+}
+
+// Make test function globally available
+window.testLeaveButton = testLeaveButton;
+
+// ============================================================================
 // INITIALIZATION
 // ============================================================================
 
@@ -26,10 +52,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add global event listener for leave button (always works)
     document.addEventListener('click', function(e) {
-        if (e.target && e.target.id === 'leaveLobbyBtn') {
+        // Check if clicked element is leave button or inside leave button
+        if (e.target && (e.target.id === 'leaveLobbyBtn' || e.target.closest('#leaveLobbyBtn'))) {
             e.preventDefault();
             e.stopPropagation();
             console.log('🚪 LEAVE BUTTON CLICKED (global listener)!');
+            console.log('🚪 Clicked element:', e.target);
+            console.log('🚪 Leave button element:', document.getElementById('leaveLobbyBtn'));
             leaveLobby();
         }
     });
@@ -265,6 +294,12 @@ function showLobby(room) {
         });
         
         console.log('🚪 Leave button event listeners added');
+        
+        // Test if button is clickable
+        console.log('🚪 Testing button clickability...');
+        console.log('🚪 Button disabled:', leaveBtn.disabled);
+        console.log('🚪 Button style:', leaveBtn.style);
+        console.log('🚪 Button computed style:', window.getComputedStyle(leaveBtn));
         
         console.log('🚪 Leave button setup complete:', leaveBtn);
     } else {
